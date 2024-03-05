@@ -17,6 +17,7 @@ lockb
 openweb
 outdir
 pausable
+pkgx
 Postcardware
 prefetch
 preinstall

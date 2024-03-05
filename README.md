@@ -19,13 +19,20 @@
 - `/etc/hosts` Management
 - Dependency-free Binary
 
-## Usage
+## Install
 
 ```bash
 bun install -d bun-reverse-proxy
-# brew install reverse-proxy - wip
-# pkgx install reverse-proxy - wip
 ```
+
+Alternatively, you can install:
+
+```bash
+brew install reverse-proxy # wip
+pkgx install reverse-proxy # wip
+```
+
+## Usage
 
 Now, you can use it in your project:
 
@@ -88,6 +95,12 @@ For help, discussion about best practices, or any other conversation that would 
 For casual chit-chat with others using this package:
 
 [Join the Stacks Discord Server](https://discord.gg/stacksjs)
+
+## Postcardware
+
+Two things are true: Stacks OSS will always stay open-source, and we do/would love to receive postcards from where Stacks is used! 🌍 _And we also publish them on our website._
+
+Our address is: Stacks.js, 5710 Crescent Park #107, Playa Vista 90094, CA.
 
 ## License
 
