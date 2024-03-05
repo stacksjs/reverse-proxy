@@ -16,7 +16,7 @@
 - SSL Support
 - Custom Domains
 - Auto HTTP to HTTPS Redirection
-- /etc/hosts Management
+- `/etc/hosts` Management
 - Dependency-free Binary
 
 ## Usage
