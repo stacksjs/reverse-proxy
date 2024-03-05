@@ -1,3 +1,3 @@
 export default {
-  'localhost:3000': 'stacks.localhost'
+  'localhost:3000': 'stacks.localhost',
 }
