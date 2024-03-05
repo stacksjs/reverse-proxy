@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": [
+      "esnext"
+    ],
+    "moduleDetection": "force",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "types": [
+      "node"
+    ],
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipDefaultLibCheck": true,
+    "skipLibCheck": true
+  }
+}
