@@ -52,9 +52,9 @@
     "typecheck": "bun --bun tsc --noEmit"
   },
   "dependencies": {
-    "@stacksjs/cli": "workspace:*",
-    "@stacksjs/path": "workspace:*",
-    "@stacksjs/storage": "workspace:*",
+    "@stacksjs/cli": "^0.58.73",
+    "@stacksjs/path": "^0.58.73",
+    "@stacksjs/storage": "^0.58.73",
     "c12": "^1.9.0"
   },
   "devDependencies": {

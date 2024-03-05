@@ -25,7 +25,7 @@
 bun install -d bun-reverse-proxy
 ```
 
-Alternatively, you can install:
+_Alternatively, you can install:_
 
 ```bash
 brew install reverse-proxy # wip
@@ -34,7 +34,7 @@ pkgx install reverse-proxy # wip
 
 ## Usage
 
-Now, you can use it in your project:
+Given you installed the npm package, you can use it in your project:
 
 ```js
 import { startProxy } from 'bun-reverse-proxy'
@@ -98,9 +98,9 @@ For casual chit-chat with others using this package:
 
 ## Postcardware
 
-Two things are true: Stacks OSS will always stay open-source, and we do/would love to receive postcards from where Stacks is used! 🌍 _And we also publish them on our website._
+Two things are true: Stacks OSS will always stay open-source, and we do/would love to receive postcards from wherever Stacks is used! 🌍 _And we also publish them on our website. -Thank you, Spatie_
 
-Our address is: Stacks.js, 5710 Crescent Park #107, Playa Vista 90094, CA.
+Our address: Stacks.js, 5710 Crescent Park #107, Playa Vista 90094, CA.
 
 ## License
 
