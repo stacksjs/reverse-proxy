@@ -12,6 +12,7 @@ interface Option {
   to?: string // domain to proxy to, defaults to stacks.localhost
   keyPath?: string // absolute path to the key
   certPath?: string // absolute path to the cert
+  httpsRedirect?: boolean // redirect http to https, defaults to true
 }
 
 type Options = Option | Option[]
@@ -85,6 +86,11 @@ function setupReverseProxy({ key, cert, hostname, port, option }: { key: Buffer,
   })
 
   // http to https redirect
+  if (option.httpsRedirect ?? true)
+    startHttpRedirectServer()
+}
+
+function startHttpRedirectServer(): void {
   http.createServer((req, res) => {
     res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` })
     res.end()
