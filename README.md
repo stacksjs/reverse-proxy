@@ -50,7 +50,7 @@ startProxy({
 
 ```bash
 reverse-proxy --from localhost:3000 --to my-project.localhost
-reverse-proxy --from localhost:3000 --to my-project.test --keyPath ./key.pem --certPath ./cert.pem
+reverse-proxy --from localhost:8080 --to my-project.test --keyPath ./key.pem --certPath ./cert.pem
 reverse-proxy --help
 reverse-proxy --version
 ```
