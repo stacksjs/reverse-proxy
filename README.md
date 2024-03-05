@@ -33,7 +33,7 @@ brew install reverse-proxy # wip
 pkgx install reverse-proxy # wip
 ```
 
-## Usage
+## Get Started
 
 Given you installed the npm package, you can use it in your project:
 
