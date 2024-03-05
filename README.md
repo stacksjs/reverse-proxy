@@ -8,7 +8,7 @@
 
 # A Better Developer Experience
 
-> A reverse proxy for local development with SSL support, custom domains, and more.
+> A reverse proxy for local development with SSL support, custom domains, and more, including a zero-config setup.
 
 ## Features
 
@@ -18,6 +18,7 @@
 - Auto HTTP to HTTPS Redirection
 - `/etc/hosts` Management
 - Dependency-free Binary
+- Zero-config Setup
 
 ## Install
 
@@ -64,13 +65,14 @@ export default {
 }
 ```
 
-Then run:
+_Then run:_
 
 ```bash
 reverse-proxy start
 ```
 
-And your config will be loaded from `reverse-proxy.config.ts` _(or `reverse-proxy.config.js`)_. Learn more in the docs.
+Your config will be loaded from `reverse-proxy.config.ts` _(or `reverse-proxy.config.js`)_.
+Learn more in the docs.
 
 ## Testing
 
