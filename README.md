@@ -8,7 +8,7 @@
 
 # A Better Developer Experience
 
-> A reverse proxy for local development with SSL support, custom domains, and more, including a zero-config setup.
+> A zero-config reverse proxy for local development with SSL support, custom domains, and more.
 
 ## Features
 
@@ -60,6 +60,7 @@ reverse-proxy --version
 You can also use a configuration file:
 
 ```ts
+// reverse-proxy.config.ts (or reverse-proxy.config.js)
 export default {
   'localhost:3000': 'stacks.localhost'
 }
@@ -73,7 +74,7 @@ reverse-proxy start
 
 Your config will be loaded from `reverse-proxy.config.ts` _(or `reverse-proxy.config.js`)_.
 
-Learn more in the [documentation](https://reverse-proxy.sh/).
+To learn more, head over to the [documentation](https://reverse-proxy.sh/).
 
 ## Testing
 
