@@ -72,7 +72,8 @@ reverse-proxy start
 ```
 
 Your config will be loaded from `reverse-proxy.config.ts` _(or `reverse-proxy.config.js`)_.
-Learn more in the docs.
+
+Learn more in the [documentation](https://reverse-proxy.sh/).
 
 ## Testing
 
