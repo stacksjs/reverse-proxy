@@ -6,9 +6,9 @@
 <!-- [![npm downloads][npm-downloads-src]][npm-downloads-href] -->
 <!-- [![Codecov][codecov-src]][codecov-href] -->
 
-# Reverse Proxy
+# A Better Developer Experience
 
-A modern reverse proxy. Pretty dev URLs for your local projects, with simplicity and flexibility.
+> A reverse proxy for local development with SSL support, custom domains, and more.
 
 ## ☘️ Features
 
@@ -34,7 +34,7 @@ import { startProxy } from 'bun-reverse-proxy'
 
 startProxy({
   from: 'localhost:3000',
-  to: 'my-project.localhost'
+  to: 'my-project.localhost' // or try 'my-project.test'
 })
 ```
 
