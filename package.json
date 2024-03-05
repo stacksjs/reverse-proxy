@@ -51,6 +51,12 @@
     "test": "bun test",
     "typecheck": "bun --bun tsc --noEmit"
   },
+  "dependencies": {
+    "@stacksjs/cli": "workspace:*",
+    "@stacksjs/path": "workspace:*",
+    "@stacksjs/storage": "workspace:*",
+    "c12": "^1.9.0"
+  },
   "devDependencies": {
     "@commitlint/cli": "^19.0.3",
     "@stacksjs/eslint-config": "^0.58.73",

@@ -10,7 +10,7 @@
 
 > A reverse proxy for local development with SSL support, custom domains, and more.
 
-## ☘️ Features
+## Features
 
 - Reverse Proxy
 - SSL Support
@@ -19,12 +19,12 @@
 - /etc/hosts Management
 - Dependency-free Binary
 
-## 🤖 Usage
+## Usage
 
 ```bash
 bun install -d bun-reverse-proxy
-# brew install reverse-proxy
-# pkgx install reverse-proxy
+# brew install reverse-proxy - wip
+# pkgx install reverse-proxy - wip
 ```
 
 Now, you can use it in your project:
@@ -94,3 +94,12 @@ For casual chit-chat with others using this package:
 The MIT License (MIT). Please see [LICENSE](https://github.com/stacksjs/stacks/tree/main/LICENSE.md) for more information.
 
 Made with 💙
+
+<!-- Badges -->
+[npm-version-src]: https://img.shields.io/npm/v/bun-reverse-proxy?style=flat-square
+[npm-version-href]: https://npmjs.com/package/bun-reverse-proxy
+[github-actions-src]: https://img.shields.io/github/actions/workflow/status/stacksjs/reverse-proxy/ci.yml?style=flat-square&branch=main
+[github-actions-href]: https://github.com/stacksjs/reverse-proxy/actions?query=workflow%3Aci
+
+<!-- [codecov-src]: https://img.shields.io/codecov/c/gh/stacksjs/reverse-proxy/main?style=flat-square
+[codecov-href]: https://codecov.io/gh/stacksjs/reverse-proxy -->
