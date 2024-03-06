@@ -1,7 +1,7 @@
 {
   "name": "bun-reverse-proxy",
   "type": "module",
-  "version": "0.2.1",
+  "version": "0.0.0",
   "description": "A modern reverse proxy, powered by Bun.",
   "author": "Chris Breuer <chris@stacksjs.org>",
   "license": "MIT",
@@ -15,6 +15,8 @@
   },
   "keywords": [
     "reverse proxy",
+    "development",
+    "environment",
     "proxy",
     "bun",
     "stacks",
@@ -41,7 +43,7 @@
     "src"
   ],
   "scripts": {
-    "build": "bun --bun build.ts",
+    "build": "bun build.ts && bun compile.ts",
     "lint": "eslint .",
     "lint:fix": "bunx eslint . --fix",
     "fresh": "bunx rimraf node_modules/ bun.lock && bun i",
@@ -56,23 +58,16 @@
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
-    "@stacksjs/cli": "^0.58.73",
-    "@stacksjs/path": "^0.58.73",
-    "@stacksjs/storage": "^0.58.73",
+    "@stacksjs/cli": "^0.59.1",
+    "@stacksjs/path": "^0.59.1",
+    "@stacksjs/storage": "^0.59.1",
     "c12": "^1.9.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.0.3",
-    "@stacksjs/eslint-config": "^0.58.73",
+    "@stacksjs/development": "^0.59.1",
     "@types/bun": "^1.0.8",
     "@types/node": "^20.11.24",
-    "bumpp": "^9.4.0",
-    "changelogen": "^0.5.5",
-    "commitizen": "^4.3.0",
-    "cz-git": "^1.9.0",
-    "lint-staged": "^15.2.2",
-    "simple-git-hooks": "^2.10.0",
-    "typescript": "^5.3.3",
+    "bun-plugin-dts-auto": "^0.10.0",
     "vitepress": "^1.0.0-rc.44"
   },
   "simple-git-hooks": {
