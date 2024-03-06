@@ -1,6 +1,6 @@
 import os from 'node:os'
 import { cli as command, log } from '@stacksjs/cli'
-import { fs } from '@stacksjs/storage'
+import { readFileSync, writeFileSync } from '@stacksjs/storage'
 import { startProxy } from '../src/start'
 import { config } from '../src/config'
 import { version } from '../package.json'
@@ -66,7 +66,7 @@ cli
     if (config && typeof config === 'object') {
       const entriesToAdd = Object.entries(config).map(([from, to]) => `127.0.0.1 ${to} # reverse-proxy mapping for ${from}`)
       try {
-        let currentHostsContent = fs.readFileSync(hostsFilePath, 'utf8')
+        let currentHostsContent = readFileSync(hostsFilePath, 'utf8')
         let updated = false
 
         for (const entry of entriesToAdd) {
@@ -83,7 +83,7 @@ cli
         }
 
         if (updated) {
-          fs.writeFileSync(hostsFilePath, currentHostsContent, 'utf8')
+          writeFileSync(hostsFilePath, currentHostsContent, 'utf8')
 
           log.success('Hosts file updated with latest proxy domains.')
         }
@@ -91,11 +91,11 @@ cli
           log.info('No new entries were added to the hosts file.')
         }
       }
-      catch (error) {
-        if (error.code === 'EACCES')
+      catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException).code === 'EACCES')
           console.error('Permission denied. Please run this command with administrative privileges.')
         else
-          console.error(`An error occurred: ${error.message}`)
+          console.error(`An error occurred: ${(error as NodeJS.ErrnoException).message}`)
       }
     }
     else {
