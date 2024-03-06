@@ -1,11 +1,12 @@
 import os from 'node:os'
-import { cli as command, log } from '@stacksjs/cli'
-import { readFileSync, writeFileSync } from '@stacksjs/storage'
+import { CAC } from 'cac'
+import { readFileSync, writeFileSync } from 'fs-extra'
+import { log } from '@stacksjs/logging'
 import { startProxy } from '../src/start'
 import { config } from '../src/config'
 import { version } from '../package.json'
 
-const cli = command('reverse-proxy')
+const cli = new CAC('reverse-proxy')
 
 interface Options {
   from?: string

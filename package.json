@@ -15,6 +15,7 @@
   },
   "keywords": [
     "reverse proxy",
+    "ssl",
     "development",
     "environment",
     "proxy",
@@ -36,6 +37,7 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
+    "bun-reverse-proxy": "./dist/cli.js",
     "reverse-proxy": "./dist/cli.js"
   },
   "files": [
@@ -43,7 +45,7 @@
     "src"
   ],
   "scripts": {
-    "build": "bun build.ts && bun compile.ts",
+    "build": "bun build.ts && bun run compile",
     "compile": "bun build ./bin/cli.ts --compile --minify --sourcemap --outfile dist/reverse-proxy",
     "lint": "eslint .",
     "lint:fix": "bunx eslint . --fix",
@@ -59,13 +61,13 @@
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
-    "@stacksjs/cli": "^0.59.4",
-    "@stacksjs/path": "^0.59.4",
-    "@stacksjs/storage": "^0.59.4",
+    "@stacksjs/cli": "^0.59.6",
+    "@stacksjs/path": "^0.59.6",
+    "@stacksjs/storage": "^0.59.6",
     "c12": "^1.9.0"
   },
   "devDependencies": {
-    "@stacksjs/development": "^0.59.4",
+    "@stacksjs/development": "^0.59.6",
     "@types/bun": "^1.0.8",
     "@types/node": "^20.11.24",
     "bun-plugin-dts-auto": "^0.10.0",

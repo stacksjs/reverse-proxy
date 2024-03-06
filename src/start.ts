@@ -20,9 +20,26 @@ type Options = Option | Option[]
 export function startServer(option: Option = { from: 'localhost:3000', to: 'stacks.localhost' }): void {
   log.debug('Starting Reverse Proxy Server')
 
-  const key = fs.readFileSync(option.keyPath ?? path.projectStoragePath(`keys/localhost-key.pem`))
-  const cert = fs.readFileSync(option.certPath ?? path.projectStoragePath(`keys/localhost-cert.pem`))
+  let key: Buffer | undefined
+  let cert: Buffer | undefined
 
+  const keyPath = option.keyPath ?? path.projectStoragePath(`keys/localhost-key.pem`)
+  if (fs.existsSync(keyPath))
+    key = fs.readFileSync(option.keyPath ?? path.projectStoragePath(`keys/localhost-key.pem`))
+  else
+    log.debug('No SSL key found')
+
+
+  const certPath = option.certPath ?? path.projectStoragePath(`certs/localhost.pem`)
+  if (fs.existsSync(certPath))
+    cert = fs.readFileSync(option.certPath ?? path.projectStoragePath(`certs/localhost.pem`))
+  else
+    log.debug('No SSL certificate found')
+
+  if (!fs.existsSync(keyPath) || fs.existsSync(certPath)) {
+    log.info('Because no valid SSL key or certificate was found, creating a self-signed certificate')
+    // wip using mkcert
+  }
   // Parse the option.from URL to dynamically set hostname and port
   const fromUrl = new URL(option.from ? (option.from.startsWith('http') ? option.from : `http://${option.from}`) : 'http://localhost:3000')
   const hostname = fromUrl.hostname
@@ -43,7 +60,7 @@ export function startServer(option: Option = { from: 'localhost:3000', to: 'stac
   })
 }
 
-function setupReverseProxy({ key, cert, hostname, port, option }: { key: Buffer, cert: Buffer, hostname: string, port: number, option: Option }): void {
+function setupReverseProxy({ key, cert, hostname, port, option }: { key?: Buffer, cert?: Buffer, hostname: string, port: number, option: Option }): void {
   // This server will act as a reverse proxy
   const httpsServer = https.createServer({ key, cert }, (req, res) => {
     // Define the target server's options

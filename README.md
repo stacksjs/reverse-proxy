@@ -35,7 +35,11 @@ pkgx install reverse-proxy # wip
 
 ## Get Started
 
-Given you installed the npm package, you can use it in your project:
+There are two ways of using this reverse proxy: _as a library or as a CLI._
+
+### Library
+
+Given the npm package is installed:
 
 ```js
 import { startProxy } from 'bun-reverse-proxy'
@@ -55,9 +59,9 @@ reverse-proxy --help
 reverse-proxy --version
 ```
 
-### Configuration
+## Configuration
 
-You can also use a configuration file:
+The Reverse Proxy can be configured using a `reverse-proxy.config.ts` _(or `reverse-proxy.config.js`)_ file and it will be automatically loaded when running the `reverse-proxy` command.
 
 ```ts
 // reverse-proxy.config.ts (or reverse-proxy.config.js)
@@ -71,8 +75,6 @@ _Then run:_
 ```bash
 reverse-proxy start
 ```
-
-Your config will be loaded from `reverse-proxy.config.ts` _(or `reverse-proxy.config.js`)_.
 
 To learn more, head over to the [documentation](https://reverse-proxy.sh/).
 
@@ -102,7 +104,7 @@ For casual chit-chat with others using this package:
 
 ## Postcardware
 
-Two things are true: Stacks OSS will always stay open-source, and we do/would love to receive postcards from wherever Stacks is used! 🌍 _And we also publish them on our website. -Thank you, Spatie_
+Two things are true: Stacks OSS will always stay open-source, and we do love to receive postcards from wherever Stacks is used! 🌍 _We also publish them on our website. And thank you, Spatie_
 
 Our address: Stacks.js, 5710 Crescent Park #107, Playa Vista 90094, CA.
 
