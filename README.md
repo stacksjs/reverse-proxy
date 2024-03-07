@@ -13,12 +13,12 @@
 ## Features
 
 - Reverse Proxy
-- SSL Support
-- Custom Domains
-- Auto HTTP to HTTPS Redirection
-- `/etc/hosts` Management
-- Dependency-free Binary
-- Zero-config Setup
+- SSL Support _(HTTPS by default)_
+- Custom Domains _(with wildcard support)_
+- Auto HTTP-to-HTTPS Redirection
+- `/etc/hosts` Management _(auto-updating)_
+- Dependency-Free Binary
+- Zero-Config Setup
 
 ## Install
 

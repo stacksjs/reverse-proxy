@@ -46,7 +46,7 @@
   ],
   "scripts": {
     "build": "bun build.ts && bun run compile",
-    "compile": "bun build ./bin/cli.ts --compile --minify --sourcemap --outfile dist/reverse-proxy",
+    "compile": "bun build ./bin/cli.ts --compile --minify --sourcemap --outfile dist/reverse-proxy && mv ./bin/reverse-proxy ./dist/reverse-proxy",
     "lint": "eslint .",
     "lint:fix": "bunx eslint . --fix",
     "fresh": "bunx rimraf node_modules/ bun.lock && bun i",
@@ -61,13 +61,12 @@
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
-    "@stacksjs/cli": "^0.59.6",
-    "@stacksjs/path": "^0.59.6",
-    "@stacksjs/storage": "^0.59.6",
+    "@stacksjs/cli": "^0.59.9",
+    "@stacksjs/storage": "^0.59.9",
     "c12": "^1.9.0"
   },
   "devDependencies": {
-    "@stacksjs/development": "^0.59.6",
+    "@stacksjs/development": "^0.59.9",
     "@types/bun": "^1.0.8",
     "@types/node": "^20.11.24",
     "bun-plugin-dts-auto": "^0.10.0",

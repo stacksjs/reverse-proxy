@@ -2,9 +2,10 @@ import * as net from 'node:net'
 import * as http from 'node:http'
 import * as https from 'node:https'
 import * as fs from 'node:fs'
+import process from 'node:process'
 import type { Buffer } from 'node:buffer'
-import { bold, green, log } from '@stacksjs/cli'
-import { path } from '@stacksjs/path'
+import path from 'node:path'
+import { bold, green, log, runCommand } from '@stacksjs/cli'
 import { version } from '../package.json'
 
 interface Option {
@@ -17,29 +18,42 @@ interface Option {
 
 type Options = Option | Option[]
 
-export function startServer(option: Option = { from: 'localhost:3000', to: 'stacks.localhost' }): void {
+export async function startServer(option: Option = { from: 'localhost:3000', to: 'stacks.localhost' }): Promise<void> {
   log.debug('Starting Reverse Proxy Server')
 
   let key: Buffer | undefined
   let cert: Buffer | undefined
 
-  const keyPath = option.keyPath ?? path.projectStoragePath(`keys/localhost-key.pem`)
+  const keyPath = option.keyPath ?? path.resolve(import.meta.dir, `keys/localhost-key.pem`)
   if (fs.existsSync(keyPath))
-    key = fs.readFileSync(option.keyPath ?? path.projectStoragePath(`keys/localhost-key.pem`))
+    key = fs.readFileSync(keyPath)
   else
     log.debug('No SSL key found')
 
-
-  const certPath = option.certPath ?? path.projectStoragePath(`certs/localhost.pem`)
+  const certPath = option.certPath ?? path.resolve(import.meta.dir, `keys/localhost.pem`)
   if (fs.existsSync(certPath))
-    cert = fs.readFileSync(option.certPath ?? path.projectStoragePath(`certs/localhost.pem`))
+    cert = fs.readFileSync(certPath)
   else
     log.debug('No SSL certificate found')
 
   if (!fs.existsSync(keyPath) || fs.existsSync(certPath)) {
-    log.info('Because no valid SSL key or certificate was found, creating a self-signed certificate')
-    // wip using mkcert
+    log.info('A valid SSL key & certificate was not found')
+    log.info('Creating a self-signed certificate...')
+
+    // self-sign a certificate using mkcert
+    const keysPath = path.resolve(import.meta.dir, 'keys')
+    if (!fs.existsSync(keysPath))
+      fs.mkdirSync(keysPath)
+
+    await runCommand('mkcert -install', {
+      cwd: keysPath,
+    })
+
+    await runCommand(`mkcert *.${option.to}`, {
+      cwd: keysPath,
+    })
   }
+
   // Parse the option.from URL to dynamically set hostname and port
   const fromUrl = new URL(option.from ? (option.from.startsWith('http') ? option.from : `http://${option.from}`) : 'http://localhost:3000')
   const hostname = fromUrl.hostname
@@ -115,7 +129,7 @@ function startHttpRedirectServer(): void {
 }
 
 export function startProxy(option?: Option): void {
-  startProxies(option)
+  startServer(option)
 }
 
 export function startProxies(options?: Options): void {
