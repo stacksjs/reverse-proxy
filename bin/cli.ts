@@ -13,6 +13,7 @@ interface Options {
   to?: string
   keyPath?: string
   certPath?: string
+  verbose?: boolean
 }
 
 cli
@@ -21,6 +22,7 @@ cli
   .option('--to <to>', 'The URL to proxy to')
   .option('--keyPath <path>', 'Absolute path to the SSL key')
   .option('--certPath <path>', 'Absolute path to the SSL certificate')
+  .option('--verbose', 'Enable verbose logging', { default: false })
   .example('reverse-proxy start --from localhost:3000 --to my-project.localhost')
   .example('reverse-proxy start --from localhost:3000 --to localhost:3001')
   .example('reverse-proxy start --from localhost:3000 --to my-project.test --keyPath /absolute/path/to/key --certPath /absolute/path/to/cert')
@@ -59,33 +61,38 @@ cli
   .example('sudo reverse-proxy update:etc-hosts')
   .example('sudo reverse-proxy update-etc-hosts')
   .action(async () => {
-    log.info('Ensuring /etc/hosts file covers the proxy domains...')
+    log.info('Ensuring /etc/hosts file covers the proxy domain/s...')
+
     const hostsFilePath = os.platform() === 'win32'
       ? 'C:\\Windows\\System32\\drivers\\etc\\hosts'
       : '/etc/hosts'
 
     if (config && typeof config === 'object') {
       const entriesToAdd = Object.entries(config).map(([from, to]) => `127.0.0.1 ${to} # reverse-proxy mapping for ${from}`)
+      // Ensure "127.0.0.1 localhost" is in the array
+      entriesToAdd.push('127.0.0.1 localhost # essential localhost mapping')
+
       try {
         let currentHostsContent = readFileSync(hostsFilePath, 'utf8')
         let updated = false
 
         for (const entry of entriesToAdd) {
-          const to = entry.split(' ')[1]
+          const [ip, host] = entry.split(' ', 2)
+          // Use a regex to match the line with any amount of whitespace between IP and host
+          const regex = new RegExp(`^${ip}\\s+${host.split(' ')[0]}(\\s|$)`, 'm')
           // Check if the entry (domain) is already in the file
-          if (!currentHostsContent.includes(to)) {
-          // If not, append it
+          if (!regex.test(currentHostsContent)) {
+            // If not, append it
             currentHostsContent += `\n${entry}`
             updated = true
           }
           else {
-            log.info(`Entry for ${to} already exists in the hosts file.`)
+            log.info(`Entry for ${host} already exists in the hosts file.`)
           }
         }
 
         if (updated) {
           writeFileSync(hostsFilePath, currentHostsContent, 'utf8')
-
           log.success('Hosts file updated with latest proxy domains.')
         }
         else {

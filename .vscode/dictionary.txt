@@ -20,6 +20,7 @@ outdir
 pausable
 pkgx
 Postcardware
+postcompile
 prefetch
 preinstall
 socio

@@ -2,13 +2,12 @@ import * as net from 'node:net'
 import * as http from 'node:http'
 import * as https from 'node:https'
 import * as fs from 'node:fs'
-import process from 'node:process'
 import type { Buffer } from 'node:buffer'
-import path from 'node:path'
-import { bold, green, log, runCommand } from '@stacksjs/cli'
+import { path } from '@stacksjs/path'
+import { bold, dim, green, log, runCommand } from '@stacksjs/cli'
 import { version } from '../package.json'
 
-interface Option {
+export interface Option {
   from?: string // domain to proxy from, defaults to localhost:3000
   to?: string // domain to proxy to, defaults to stacks.localhost
   keyPath?: string // absolute path to the key
@@ -21,38 +20,8 @@ type Options = Option | Option[]
 export async function startServer(option: Option = { from: 'localhost:3000', to: 'stacks.localhost' }): Promise<void> {
   log.debug('Starting Reverse Proxy Server')
 
-  let key: Buffer | undefined
-  let cert: Buffer | undefined
-
-  const keyPath = option.keyPath ?? path.resolve(import.meta.dir, `keys/localhost-key.pem`)
-  if (fs.existsSync(keyPath))
-    key = fs.readFileSync(keyPath)
-  else
-    log.debug('No SSL key found')
-
-  const certPath = option.certPath ?? path.resolve(import.meta.dir, `keys/localhost.pem`)
-  if (fs.existsSync(certPath))
-    cert = fs.readFileSync(certPath)
-  else
-    log.debug('No SSL certificate found')
-
-  if (!fs.existsSync(keyPath) || fs.existsSync(certPath)) {
-    log.info('A valid SSL key & certificate was not found')
-    log.info('Creating a self-signed certificate...')
-
-    // self-sign a certificate using mkcert
-    const keysPath = path.resolve(import.meta.dir, 'keys')
-    if (!fs.existsSync(keysPath))
-      fs.mkdirSync(keysPath)
-
-    await runCommand('mkcert -install', {
-      cwd: keysPath,
-    })
-
-    await runCommand(`mkcert *.${option.to}`, {
-      cwd: keysPath,
-    })
-  }
+  // Ensure the SSL key and certificate exist
+  const { key, cert } = await ensureCertificates(option)
 
   // Parse the option.from URL to dynamically set hostname and port
   const fromUrl = new URL(option.from ? (option.from.startsWith('http') ? option.from : `http://${option.from}`) : 'http://localhost:3000')
@@ -74,7 +43,7 @@ export async function startServer(option: Option = { from: 'localhost:3000', to:
   })
 }
 
-function setupReverseProxy({ key, cert, hostname, port, option }: { key?: Buffer, cert?: Buffer, hostname: string, port: number, option: Option }): void {
+export function setupReverseProxy({ key, cert, hostname, port, option }: { key?: Buffer, cert?: Buffer, hostname: string, port: number, option: Option }): void {
   // This server will act as a reverse proxy
   const httpsServer = https.createServer({ key, cert }, (req, res) => {
     // Define the target server's options
@@ -113,7 +82,7 @@ function setupReverseProxy({ key, cert, hostname, port, option }: { key?: Buffer
     // eslint-disable-next-line no-console
     console.log('')
     // eslint-disable-next-line no-console
-    console.log(`  ${green('➜')}  ${option.from} ➜ ${option.to}`)
+    console.log(`  ${green('➜')}  ${dim(option.from!)} ${dim('➜')} https://${option.to}`)
   })
 
   // http to https redirect
@@ -121,7 +90,7 @@ function setupReverseProxy({ key, cert, hostname, port, option }: { key?: Buffer
     startHttpRedirectServer()
 }
 
-function startHttpRedirectServer(): void {
+export function startHttpRedirectServer(): void {
   http.createServer((req, res) => {
     res.writeHead(301, { Location: `https://${req.headers.host}${req.url}` })
     res.end()
@@ -141,4 +110,30 @@ export function startProxies(options?: Options): void {
   else {
     startServer(options)
   }
+}
+
+export async function ensureCertificates(option: Option): Promise<{ key: Buffer, cert: Buffer }> {
+  const sslBasePath = path.homeDir('.stacks/ssl')
+  const keysPath = path.resolve(sslBasePath, 'keys')
+  await fs.promises.mkdir(keysPath, { recursive: true })
+
+  const keyPath = option.keyPath ?? path.resolve(keysPath, `${option.to}-key.pem`)
+  const certPath = option.certPath ?? path.resolve(keysPath, `${option.to}.pem`)
+
+  let key: Buffer | undefined
+  let cert: Buffer | undefined
+
+  try {
+    key = await fs.promises.readFile(keyPath)
+    cert = await fs.promises.readFile(certPath)
+  }
+  catch (error) {
+    log.info('A valid SSL key & certificate was not found, creating a self-signed certificate...')
+    await runCommand('mkcert -install', { cwd: keysPath })
+    await runCommand(`mkcert ${option.to}`, { cwd: keysPath })
+    key = await fs.promises.readFile(keyPath)
+    cert = await fs.promises.readFile(certPath)
+  }
+
+  return { key, cert }
 }
