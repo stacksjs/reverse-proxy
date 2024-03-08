@@ -6,7 +6,7 @@ import type { Buffer } from 'node:buffer'
 import { path } from '@stacksjs/path'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
-import { generateAndSaveCertificates } from './keys'
+import { generateAndSaveCertificates, addRootCAToSystemTrust } from './keys'
 
 export interface Option {
   from?: string // domain to proxy from, defaults to localhost:3000
@@ -131,6 +131,7 @@ export async function ensureCertificates(option: Option): Promise<{ key: Buffer,
   catch (error) {
     log.info('A valid SSL key & certificate was not found, creating a self-signed certificate...')
     await generateAndSaveCertificates()
+    await addRootCAToSystemTrust()
 
     key = await fs.promises.readFile(keyPath)
     cert = await fs.promises.readFile(certPath)
