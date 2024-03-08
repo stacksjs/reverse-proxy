@@ -4,8 +4,9 @@ import * as https from 'node:https'
 import * as fs from 'node:fs'
 import type { Buffer } from 'node:buffer'
 import { path } from '@stacksjs/path'
-import { bold, dim, green, log, runCommand } from '@stacksjs/cli'
+import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
+import { generateAndSaveCertificates } from './keys'
 
 export interface Option {
   from?: string // domain to proxy from, defaults to localhost:3000
@@ -117,8 +118,8 @@ export async function ensureCertificates(option: Option): Promise<{ key: Buffer,
   const keysPath = path.resolve(sslBasePath, 'keys')
   await fs.promises.mkdir(keysPath, { recursive: true })
 
-  const keyPath = option.keyPath ?? path.resolve(keysPath, `${option.to}-key.pem`)
-  const certPath = option.certPath ?? path.resolve(keysPath, `${option.to}.pem`)
+  const keyPath = option.keyPath ?? path.resolve(keysPath, `${option.to}.key`)
+  const certPath = option.certPath ?? path.resolve(keysPath, `${option.to}.crt`)
 
   let key: Buffer | undefined
   let cert: Buffer | undefined
@@ -129,8 +130,8 @@ export async function ensureCertificates(option: Option): Promise<{ key: Buffer,
   }
   catch (error) {
     log.info('A valid SSL key & certificate was not found, creating a self-signed certificate...')
-    await runCommand('mkcert -install', { cwd: keysPath })
-    await runCommand(`mkcert ${option.to}`, { cwd: keysPath })
+    await generateAndSaveCertificates()
+
     key = await fs.promises.readFile(keyPath)
     cert = await fs.promises.readFile(certPath)
   }

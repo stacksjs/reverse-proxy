@@ -108,6 +108,18 @@ Two things are true: Stacks OSS will always stay open-source, and we do love to 
 
 Our address: Stacks.js, 5710 Crescent Park #107, Playa Vista 90094, CA.
 
+## Sponsors
+
+We would like to extend our thanks to the following sponsors for funding Stacks development. If you are interested in becoming a sponsor, please reach out to us.
+
+- [JetBrains](https://www.jetbrains.com/)
+- [The Solana Foundation](https://solana.com/)
+
+## Credits
+
+- [Chris Breuer](https://github.com/chrisbbreuer)
+- [All Contributors](../../contributors)
+
 ## License
 
 The MIT License (MIT). Please see [LICENSE](https://github.com/stacksjs/stacks/tree/main/LICENSE.md) for more information.
