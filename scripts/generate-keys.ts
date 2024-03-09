@@ -1,4 +1,4 @@
-import { addRootCA, generateAndSaveCertificates, generateRootCA } from '../src/keys'
+import { generateAndSaveCertificates, generateRootCA } from '../src/keys'
 
 // Generate a root key and certificate (self-signed)
 await generateRootCA()

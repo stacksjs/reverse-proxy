@@ -1,9 +1,6 @@
 import * as net from 'node:net'
 import * as http from 'node:http'
 import * as https from 'node:https'
-import * as fs from 'node:fs'
-import type { Buffer } from 'node:buffer'
-import { path } from '@stacksjs/path'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 
