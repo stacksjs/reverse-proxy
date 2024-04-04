@@ -69,10 +69,10 @@
   },
   "devDependencies": {
     "@stacksjs/development": "^0.59.11",
-    "@types/bun": "^1.0.8",
-    "@types/node": "^20.11.25",
+    "@types/bun": "^1.0.12",
+    "@types/node": "^20.12.4",
     "bun-plugin-dts-auto": "^0.10.0",
-    "vitepress": "^1.0.0-rc.45"
+    "vitepress": "^1.0.2"
   },
   "simple-git-hooks": {
     "pre-commit": "bun lint-staged",
