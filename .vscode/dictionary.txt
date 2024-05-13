@@ -1,4 +1,5 @@
 antfu
+biomejs
 booleanish
 bumpp
 bunx
@@ -8,6 +9,7 @@ codecov
 commitlint
 commitlintrc
 composables
+davidanson
 degit
 deps
 destructurable
