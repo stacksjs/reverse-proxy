@@ -67,9 +67,9 @@
   "devDependencies": {
     "@biomejs/biome": "1.7.3",
     "@stacksjs/development": "^0.59.11",
-    "@types/bun": "^1.0.12",
-    "bun-plugin-dts-auto": "^0.10.0",
-    "vitepress": "^1.0.2"
+    "@types/bun": "^1.1.2",
+    "bun-plugin-dts-auto": "^0.11.1",
+    "vitepress": "^1.1.4"
   },
   "simple-git-hooks": {
     "pre-commit": "bun lint-staged",
