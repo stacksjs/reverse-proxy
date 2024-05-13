@@ -49,8 +49,9 @@
     "build": "bun scripts/build.ts && bun run compile",
     "compile": "bun build ./bin/cli.ts --compile --external rollup --minify --sourcemap --outfile dist/reverse-proxy",
     "postcompile": "bun ./scripts/post-compile.ts",
-    "lint": "eslint .",
-    "lint:fix": "bunx eslint . --fix",
+    "lint": "bunx biome check .",
+    "lint:fix": "bunx biome check --apply .",
+    "lint:fix-unsafe": "bunx biome check --apply-unsafe .",
     "fresh": "bunx rimraf node_modules/ bun.lock && bun i",
     "commit": "git cz",
     "changelog": "bunx changelogen --output CHANGELOG.md",
@@ -68,9 +69,9 @@
     "c12": "^1.10.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.7.3",
     "@stacksjs/development": "^0.59.11",
     "@types/bun": "^1.0.12",
-    "@types/node": "^20.12.4",
     "bun-plugin-dts-auto": "^0.10.0",
     "vitepress": "^1.0.2"
   },
@@ -79,7 +80,7 @@
     "commit-msg": "bunx --no -- commitlint --edit $1"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,vue}": "eslint --fix"
+    "*.{js,jsx,ts,tsx,vue}": "bunx biome check --apply ."
   },
   "config": {
     "commitizen": {
