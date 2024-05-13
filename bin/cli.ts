@@ -24,6 +24,7 @@ cli
   .option('--certPath <path>', 'Absolute path to the SSL certificate')
   .option('--verbose', 'Enable verbose logging', { default: false })
   .example('reverse-proxy start --from localhost:3000 --to my-project.localhost')
+  .example('reverse-proxy start --from localhost:3001 --to my-project.localhost/api')
   .example('reverse-proxy start --from localhost:3000 --to localhost:3001')
   .example('reverse-proxy start --from localhost:3000 --to my-project.test --keyPath /absolute/path/to/key --certPath /absolute/path/to/cert')
   .action(async (options?: Options) => {
