@@ -40,11 +40,7 @@
     "bun-reverse-proxy": "./dist/cli.js",
     "reverse-proxy": "./dist/cli.js"
   },
-  "files": [
-    "dist",
-    "scripts",
-    "src"
-  ],
+  "files": ["dist", "scripts", "src"],
   "scripts": {
     "build": "bun scripts/build.ts && bun run compile",
     "compile": "bun build ./bin/cli.ts --compile --external rollup --minify --sourcemap --outfile dist/reverse-proxy",

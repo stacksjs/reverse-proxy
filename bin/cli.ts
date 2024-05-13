@@ -1,10 +1,10 @@
 import os from 'node:os'
+import { log } from '@stacksjs/logging'
 import { CAC } from 'cac'
 import { readFileSync, writeFileSync } from 'fs-extra'
-import { log } from '@stacksjs/logging'
-import { startProxy } from '../src/start'
-import { config } from '../src/config'
 import { version } from '../package.json'
+import { config } from '../src/config'
+import { startProxy } from '../src/start'
 
 const cli = new CAC('reverse-proxy')
 
@@ -26,7 +26,9 @@ cli
   .example('reverse-proxy start --from localhost:3000 --to my-project.localhost')
   .example('reverse-proxy start --from localhost:3001 --to my-project.localhost/api')
   .example('reverse-proxy start --from localhost:3000 --to localhost:3001')
-  .example('reverse-proxy start --from localhost:3000 --to my-project.test --keyPath /absolute/path/to/key --certPath /absolute/path/to/cert')
+  .example(
+    'reverse-proxy start --from localhost:3000 --to my-project.test --keyPath /absolute/path/to/key --certPath /absolute/path/to/cert',
+  )
   .action(async (options?: Options) => {
     if (options?.from || options?.to) {
       startProxy({
@@ -49,27 +51,29 @@ cli
           certPath: options?.certPath,
         })
       }
-    }
-    else {
+    } else {
       // eslint-disable-next-line no-console
       console.log('No proxies found in the config')
     }
   })
 
 cli
-  .command('update:etc-hosts', 'Update the /etc/hosts file with the proxy domains. Please note, this command requires sudo/admin permissions.')
+  .command(
+    'update:etc-hosts',
+    'Update the /etc/hosts file with the proxy domains. Please note, this command requires sudo/admin permissions.',
+  )
   .alias('update-etc-hosts')
   .example('sudo reverse-proxy update:etc-hosts')
   .example('sudo reverse-proxy update-etc-hosts')
   .action(async () => {
     log.info('Ensuring /etc/hosts file covers the proxy domain/s...')
 
-    const hostsFilePath = os.platform() === 'win32'
-      ? 'C:\\Windows\\System32\\drivers\\etc\\hosts'
-      : '/etc/hosts'
+    const hostsFilePath = os.platform() === 'win32' ? 'C:\\Windows\\System32\\drivers\\etc\\hosts' : '/etc/hosts'
 
     if (config && typeof config === 'object') {
-      const entriesToAdd = Object.entries(config).map(([from, to]) => `127.0.0.1 ${to} # reverse-proxy mapping for ${from}`)
+      const entriesToAdd = Object.entries(config).map(
+        ([from, to]) => `127.0.0.1 ${to} # reverse-proxy mapping for ${from}`,
+      )
       // Ensure "127.0.0.1 localhost" is in the array
       entriesToAdd.push('127.0.0.1 localhost # essential localhost mapping')
 
@@ -86,8 +90,7 @@ cli
             // If not, append it
             currentHostsContent += `\n${entry}`
             updated = true
-          }
-          else {
+          } else {
             log.info(`Entry for ${host} already exists in the hosts file.`)
           }
         }
@@ -95,30 +98,24 @@ cli
         if (updated) {
           writeFileSync(hostsFilePath, currentHostsContent, 'utf8')
           log.success('Hosts file updated with latest proxy domains.')
-        }
-        else {
+        } else {
           log.info('No new entries were added to the hosts file.')
         }
-      }
-      catch (error: unknown) {
+      } catch (error: unknown) {
         if ((error as NodeJS.ErrnoException).code === 'EACCES')
           console.error('Permission denied. Please run this command with administrative privileges.')
-        else
-          console.error(`An error occurred: ${(error as NodeJS.ErrnoException).message}`)
+        else console.error(`An error occurred: ${(error as NodeJS.ErrnoException).message}`)
       }
-    }
-    else {
+    } else {
       // eslint-disable-next-line no-console
       console.log('No proxies found. Is your config configured properly?')
     }
   })
 
-cli
-  .command('version', 'Show the version of the Reverse Proxy CLI')
-  .action(() => {
-    // eslint-disable-next-line no-console
-    console.log(version)
-  })
+cli.command('version', 'Show the version of the Reverse Proxy CLI').action(() => {
+  // eslint-disable-next-line no-console
+  console.log(version)
+})
 
 cli.version(version)
 cli.help()
