@@ -62,7 +62,7 @@
   "dependencies": {
     "@stacksjs/cli": "^0.59.11",
     "@stacksjs/storage": "^0.59.11",
-    "c12": "^1.10.0"
+    "c12": "^2.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "1.7.3",
