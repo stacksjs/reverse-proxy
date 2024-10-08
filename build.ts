@@ -10,9 +10,7 @@ await Bun.build({
   format: 'esm',
   target: 'bun',
   external: ['rollup', 'fsevents'],
-  plugins: [
-    dts(),
-  ],
+  plugins: [dts()],
 })
 
 await $`cp ./dist/src/index.js ./dist/index.js`
