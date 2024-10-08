@@ -60,16 +60,16 @@
     "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
-    "@stacksjs/cli": "^0.59.11",
-    "@stacksjs/storage": "^0.59.11",
+    "@stacksjs/cli": "^0.64.6",
+    "@stacksjs/storage": "^0.64.6",
     "c12": "^2.0.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.7.3",
-    "@stacksjs/development": "^0.59.11",
-    "@types/bun": "^1.1.2",
-    "bun-plugin-dts-auto": "^0.11.1",
-    "vitepress": "^1.1.4"
+    "@biomejs/biome": "1.9.3",
+    "@stacksjs/development": "^0.64.6",
+    "@types/bun": "^1.1.10",
+    "bun-plugin-dts-auto": "^0.20.5",
+    "vitepress": "^1.4.0"
   },
   "simple-git-hooks": {
     "pre-commit": "bun lint-staged",
