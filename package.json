@@ -42,7 +42,7 @@
   },
   "files": ["dist", "scripts", "src"],
   "scripts": {
-    "build": "bun scripts/build.ts && bun run compile",
+    "build": "bun build.ts",
     "compile": "bun build ./bin/cli.ts --compile --external rollup --minify --sourcemap --outfile dist/reverse-proxy",
     "postcompile": "bun ./scripts/post-compile.ts",
     "lint": "bunx biome check .",
