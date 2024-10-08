@@ -1,6 +1,34 @@
 # Changelog
 
 
+## v0.0.1...main
+
+[compare changes](https://github.com/stacksjs/reverse-proxy/compare/v0.0.1...main)
+
+### 🏡 Chore
+
+- Wip ([c5e31d5](https://github.com/stacksjs/reverse-proxy/commit/c5e31d5))
+- Wip ([6020df1](https://github.com/stacksjs/reverse-proxy/commit/6020df1))
+- Wip ([be3dde1](https://github.com/stacksjs/reverse-proxy/commit/be3dde1))
+- Wip ([e9e0feb](https://github.com/stacksjs/reverse-proxy/commit/e9e0feb))
+- Wip ([383854c](https://github.com/stacksjs/reverse-proxy/commit/383854c))
+- Wip ([363445b](https://github.com/stacksjs/reverse-proxy/commit/363445b))
+- Add `rp` ([beced3c](https://github.com/stacksjs/reverse-proxy/commit/beced3c))
+- Wip ([99cf0df](https://github.com/stacksjs/reverse-proxy/commit/99cf0df))
+- Wip ([c9341a4](https://github.com/stacksjs/reverse-proxy/commit/c9341a4))
+- Use `bun publish` ([6f6ae9d](https://github.com/stacksjs/reverse-proxy/commit/6f6ae9d))
+- Add tests ([da19c51](https://github.com/stacksjs/reverse-proxy/commit/da19c51))
+- Ignore docs cache ([81f2296](https://github.com/stacksjs/reverse-proxy/commit/81f2296))
+- Use bunx ([ec65717](https://github.com/stacksjs/reverse-proxy/commit/ec65717))
+- Adjust examples ([d4745fc](https://github.com/stacksjs/reverse-proxy/commit/d4745fc))
+- Adjust build process ([1e5c63c](https://github.com/stacksjs/reverse-proxy/commit/1e5c63c))
+- Remove postcompile ([52a9bc6](https://github.com/stacksjs/reverse-proxy/commit/52a9bc6))
+- Remove lint:fix-unsafe ([91ad947](https://github.com/stacksjs/reverse-proxy/commit/91ad947))
+
+### ❤️ Contributors
+
+- Chris <chrisbreuer93@gmail.com>
+
 ## ...main
 
 
