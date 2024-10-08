@@ -1,6 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test'
-import * as http from 'node:http'
-import * as net from 'node:net'
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { setupReverseProxy, startHttpRedirectServer, startProxies, startProxy, startServer } from '../src/start'
 import type { ReverseProxyOption } from '../src/types'
 
@@ -45,7 +43,7 @@ describe('@stacksjs/reverse-proxy', () => {
         connect: mockConnect,
       }))
 
-      await expect(startServer()).rejects.toThrow('Cannot start reverse proxy because localhost:3000 is unreachable.')
+      expect(startServer()).rejects.toThrow('Cannot start reverse proxy because localhost:3000 is unreachable.')
     })
   })
 

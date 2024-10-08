@@ -64,6 +64,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.3",
+    "@stacksjs/biome-config": "0.1.5",
     "@stacksjs/development": "^0.64.6",
     "@types/bun": "^1.1.10",
     "bun-plugin-dts-auto": "^0.20.5",
