@@ -1,4 +1,4 @@
-<p align="center"><img src=".github/art/cover.jpg" alt="Social Card of this repo"></p>
+<p align="center"><img src="https://github.com/stacksjs/reverse-proxy/blob/main/.github/art/cover.jpg?raw=true" alt="Social Card of this repo"></p>
 
 [![npm version][npm-version-src]][npm-version-href]
 [![GitHub Actions][github-actions-src]][github-actions-href]
@@ -13,25 +13,25 @@
 ## Features
 
 - Reverse Proxy
-- SSL Support _(HTTPS by default)_
+<!-- - SSL Support _(HTTPS by default)_ -->
 - Custom Domains _(with wildcard support)_
-- Auto HTTP-to-HTTPS Redirection
-- `/etc/hosts` Management _(auto-updating)_
+<!-- - Auto HTTP-to-HTTPS Redirection -->
+<!-- - `/etc/hosts` Management _(auto-updating)_ -->
 - Dependency-Free Binary
 - Zero-Config Setup
 
 ## Install
 
 ```bash
-bun install -d bun-reverse-proxy
+bun install -d @stacksjs/reverse-proxy
 ```
 
-_Alternatively, you can install:_
+<!-- _Alternatively, you can install:_
 
 ```bash
 brew install reverse-proxy # wip
 pkgx install reverse-proxy # wip
-```
+``` -->
 
 ## Get Started
 
@@ -106,7 +106,7 @@ For casual chit-chat with others using this package:
 
 Two things are true: Stacks OSS will always stay open-source, and we do love to receive postcards from wherever Stacks is used! 🌍 _We also publish them on our website. And thank you, Spatie_
 
-Our address: Stacks.js, 5710 Crescent Park #107, Playa Vista 90094, CA.
+Our address: Stacks.js, 12665 Village Ln #2306, Playa Vista, CA 90094
 
 ## Sponsors
 
