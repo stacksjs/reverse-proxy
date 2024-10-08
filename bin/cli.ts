@@ -5,16 +5,9 @@ import { readFileSync, writeFileSync } from 'fs-extra'
 import { version } from '../package.json'
 import { config } from '../src/config'
 import { startProxy } from '../src/start'
+import type { ReverseProxyOption } from '../src/types'
 
 const cli = new CAC('reverse-proxy')
-
-interface Options {
-  from?: string
-  to?: string
-  keyPath?: string
-  certPath?: string
-  verbose?: boolean
-}
 
 cli
   .command('start', 'Start the Reverse Proxy Server')
@@ -29,7 +22,7 @@ cli
   .example(
     'reverse-proxy start --from localhost:3000 --to my-project.test --keyPath /absolute/path/to/key --certPath /absolute/path/to/cert',
   )
-  .action(async (options?: Options) => {
+  .action(async (options?: ReverseProxyOption) => {
     if (options?.from || options?.to) {
       startProxy({
         from: options?.from ?? 'localhost:3000',

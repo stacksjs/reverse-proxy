@@ -1,3 +1,3 @@
 export { config } from './config'
-export * from './keys'
 export * from './start'
+export * from './types'

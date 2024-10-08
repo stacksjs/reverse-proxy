@@ -1,5 +1,5 @@
 {
-  "name": "bun-reverse-proxy",
+  "name": "@stacksjs/reverse-proxy",
   "type": "module",
   "version": "0.0.1",
   "description": "A modern reverse proxy, powered by Bun.",

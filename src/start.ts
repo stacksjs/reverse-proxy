@@ -3,18 +3,11 @@ import * as https from 'node:https'
 import * as net from 'node:net'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
+import type { ReverseProxyOption, ReverseProxyOptions } from './types'
 
-export interface Option {
-  from?: string // domain to proxy from, defaults to localhost:3000
-  to?: string // domain to proxy to, defaults to stacks.localhost
-  keyPath?: string // absolute path to the key
-  certPath?: string // absolute path to the cert
-  httpsRedirect?: boolean // redirect http to https, defaults to true
-}
-
-type Options = Option | Option[]
-
-export async function startServer(option: Option = { from: 'localhost:3000', to: 'stacks.localhost' }): Promise<void> {
+export async function startServer(
+  option: ReverseProxyOption = { from: 'localhost:3000', to: 'stacks.localhost' },
+): Promise<void> {
   log.debug('Starting Reverse Proxy Server')
 
   // Parse the option.from URL to dynamically set hostname and port
@@ -35,7 +28,7 @@ export async function startServer(option: Option = { from: 'localhost:3000', to:
       '-----BEGIN RSA PRIVATE KEY-----\r\nMIIEogIBAAKCAQEAtDZfp/cbrGrexbxZ/+/zRFw59+SP09HAIsHrAWww6Hl7TP4j\r\nn700amEvtSnGvW8guJBbhVu3DvILIoR29m1emI4C5LgxmLCQX4IhlcsrbvkI5tqZ\r\n7LxMX31ke2dROL+l1Juataebu99441tgq9j8d38x0N01rgJpeksjedxOe8InmNU4\r\ncNkK4RvK1MU03NeNBUcWlsBDG0MubS2VyLjctB63FVG5jO9e9mQnqffe/gcfj3e7\r\naAyLol6kusffCJar9j2vOPenJzb/owKt/N23Ckgo3KUYs1Bx9kyu0h3DboHrwSHD\r\nbitZ2b8hIK6LrxtYkFAYJFdxwxiqRd3kfCbmVQIDAQABAoIBAACi9oiJ22uq/vl0\r\n1l6Mku/pYX0KLiXh5ktZIwLgxnVzxGc7uJV+XhqIGFqL+Ls/kr6EKAabEdT4Luji\r\nzebF8SEZ01HKgsZWzVPBCmxUiOU99PWXzRZkfeKSd1HmRgesyaGsIQpGOssZmXw4\r\nHOnOfOnRJbRmq6NfN88qR8hM6mwOfHzA28+0lLLrqcR/2sHSC9S91RZhjFp/bJ4J\r\nftaTNeYVo8AeY9AozLl+JI1z7KaovkKdNTFaqEXJEeiYY6XilbS4EGi3ZMh5a4f7\r\ndsaRueEWr+OIHqHpbk3yJVI5NXJz2Z+Pmm4yinsC+ZF+ADaw0j4a258SKO9Nc7A9\r\nF1vY20ECgYEA87Ms2xS9lxtsRerg/Z/SSoe+8y5vppfMTEZPFdwjJZz4K9lOWHnL\r\nxBTwvQEiyv5u5ygI6yLHTmhIZkh4DK3CUNQyFlU2le0xHjiFwxFU9JQTjDRHrwaL\r\nGbhTISUkYPJFPUGPMa8KWSFqBMl0BC9gu/weCSRdaNDrzeDXb+pKHPUCgYEAvU7h\r\ny99EeUy/5gwJh8VBXCjBRxxqVsuW00QMh5ZGrV1UEMEcVfZDP+ELaxtPtekKw1f8\r\nktQWp3M2GTftIjllrBNe8ibgB/kbcC0eowEYkx2qaHEQYD2QlBfg7gcQ+LMzMr5a\r\nu/0WTPbcfJWhsmogbAECQfJlS1Zg2FBCEAHdx+ECgYAgpvgynnPMpEr8jzz4Horh\r\nm5CVKrqg+qPP8He2ORmod4C091fM+Py5WAjtehJ8WlznsfCH+M/1jHlu4vTa1gk8\r\nJUJUxbQboH09TFt3yIG2h4Sa+4JDTEAlARJ6VWyrZKqsS3VxNb/QM27uF0PpL6Pp\r\nbB1mIi411hBSNHcJMr4dZQKBgD2PqV3i/SF1E/J7d53vR5HwrumxE+Ol0SZiurBc\r\n7h7yeqP4KH7L1pKvXEc4WnONlTJxKnGVBsjtbmpFBZhbkfSjV/znJ3NwTrvr8EqR\r\n0KwGuaO9INYrLxj5quu84If/vmaCAH+hjd75aDobbrnWSTTWHyXS7Z3SOSwe7VzH\r\nPpgBAoGAJbGOBQHrnFBJ79n4Q6YDzZw8LmUOxffNSO5R9N94pwLsYYe3my63VCiJ\r\n1ZTusaiH0L8En3E8PAXHGkAb1JwjjJ89cJI7y5VC5Kh6O94J2J/bbURFtOZleQc2\r\nQgCch29UPYEv39RCMgkIao+lrmyPSqZUYK5Fy2Cd9M/SBOkc/fI=\r\n-----END RSA PRIVATE KEY-----\r\n'
 
     // Proceed with setting up the reverse proxy after successful connection
-    setupReverseProxy({ key, cert, hostname, port, option })
+    setupReverseProxy({ key, cert, hostname, port })
   })
 
   socket.on('error', (err) => {
@@ -44,16 +37,12 @@ export async function startServer(option: Option = { from: 'localhost:3000', to:
   })
 }
 
-export function setupReverseProxy({
-  key,
-  cert,
-  hostname,
-  port,
-  option,
-}: { key?: string; cert?: string; hostname: string; port: number; option: Option }): void {
-  log.debug('setupReverseProxy', { key, cert, hostname, port, option })
+export function setupReverseProxy(options: ReverseProxyOption): void {
+  log.debug('setupReverseProxy', options)
 
   // This server will act as a reverse proxy
+  const { key, cert, hostname, port, from, to, httpsRedirect } = options
+
   const httpsServer = https.createServer({ key, cert }, (req, res) => {
     // Define the target server's options
     const options = {
@@ -91,11 +80,11 @@ export function setupReverseProxy({
     // eslint-disable-next-line no-console
     console.log('')
     // eslint-disable-next-line no-console
-    console.log(`  ${green('➜')}  ${dim(option.from as string)} ${dim('➜')} https://${option.to}`)
+    console.log(`  ${green('➜')}  ${dim(from as string)} ${dim('➜')} https://${to}`)
   })
 
   // http to https redirect
-  if (option.httpsRedirect ?? true) startHttpRedirectServer()
+  if (httpsRedirect) startHttpRedirectServer()
 }
 
 export function startHttpRedirectServer(): void {
@@ -107,13 +96,13 @@ export function startHttpRedirectServer(): void {
     .listen(80)
 }
 
-export function startProxy(option?: Option): void {
+export function startProxy(option?: ReverseProxyOption): void {
   startServer(option)
 }
 
-export function startProxies(options?: Options): void {
+export function startProxies(options?: ReverseProxyOptions): void {
   if (Array.isArray(options)) {
-    options.forEach((option: Option) => {
+    options.forEach((option: ReverseProxyOption) => {
       startServer(option)
     })
   } else {
