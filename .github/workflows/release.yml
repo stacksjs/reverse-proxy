@@ -1,4 +1,4 @@
-name: Release
+name: CI
 
 on:
   push:
@@ -7,18 +7,13 @@ on:
 
 jobs:
   release:
-    name: Release
+    name: release
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set Node.js
-        uses: actions/setup-node@v4
-        with:
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
@@ -38,9 +33,9 @@ jobs:
         run: bun run build
 
       - name: Publish to npm
-        run: npm publish --access public --no-git-checks
+        run: bun publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+          BUN_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
 
       - name: Create GitHub release
         run: npx changelogithub
