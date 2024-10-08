@@ -2,10 +2,31 @@ import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { setupReverseProxy, startHttpRedirectServer, startProxies, startProxy, startServer } from '../src/start'
 import type { ReverseProxyOption } from '../src/types'
 
+const mockLog = {
+  debug: mock(),
+  error: mock(),
+  info: mock(),
+}
+
+mock.module('@stacksjs/cli', () => ({
+  log: mockLog,
+  bold: mock((str) => str),
+  dim: mock((str) => str),
+  green: mock((str) => str),
+}))
+
 describe('@stacksjs/reverse-proxy', () => {
   beforeEach(() => {
     // Reset all mocks before each test
     mock.restore()
+
+    // Re-mock @stacksjs/cli after restoring all mocks
+    mock.module('@stacksjs/cli', () => ({
+      log: mockLog,
+      bold: mock((str) => str),
+      dim: mock((str) => str),
+      green: mock((str) => str),
+    }))
   })
 
   afterEach(() => {
@@ -70,8 +91,37 @@ describe('@stacksjs/reverse-proxy', () => {
 
       setupReverseProxy({ hostname: 'localhost', port: 3000, from: 'localhost:3000', to: 'example.com' })
 
+      expect(mockLog.debug).toHaveBeenCalledWith('setupReverseProxy', expect.any(Object))
       expect(mockCreateServer).toHaveBeenCalled()
       expect(mockHttpServer.listen).toHaveBeenCalledWith(80, '0.0.0.0', expect.any(Function))
+    })
+
+    it('handles port 80 already in use', () => {
+      const mockExit = mock((code: number) => {})
+      process.exit = mockExit as any
+
+      const mockTestServer = {
+        once: mock((event: string, callback: (err?: Error) => void) => {
+          if (event === 'error') {
+            const error = new Error('EADDRINUSE') as NodeJS.ErrnoException
+            error.code = 'EADDRINUSE'
+            callback(error)
+          }
+        }),
+        listen: mock(),
+      }
+      mock.module('node:net', () => ({
+        createServer: mock(() => mockTestServer),
+      }))
+
+      setupReverseProxy({ hostname: 'localhost', port: 3000, from: 'localhost:3000', to: 'example.com' })
+
+      expect(mockLog.debug).toHaveBeenCalledWith('setupReverseProxy', expect.any(Object))
+      expect(mockTestServer.once).toHaveBeenCalledWith('error', expect.any(Function))
+      expect(mockTestServer.listen).toHaveBeenCalledWith(80, '0.0.0.0')
+      expect(mockLog.error).toHaveBeenCalled()
+      expect(mockLog.info).toHaveBeenCalled()
+      expect(mockExit).toHaveBeenCalledWith(1)
     })
   })
 
@@ -101,7 +151,7 @@ describe('@stacksjs/reverse-proxy', () => {
       }))
 
       const option: ReverseProxyOption = { from: 'localhost:4000', to: 'example.com' }
-      await startProxy(option)
+      startProxy(option)
 
       expect(mockStartServer).toHaveBeenCalledWith(option)
     })
