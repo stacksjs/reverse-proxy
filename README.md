@@ -42,7 +42,7 @@ There are two ways of using this reverse proxy: _as a library or as a CLI._
 Given the npm package is installed:
 
 ```js
-import { startProxy } from 'bun-reverse-proxy'
+import { startProxy } from '@stacksjs/reverse-proxy'
 
 startProxy({
   from: 'localhost:3000',
@@ -127,8 +127,8 @@ The MIT License (MIT). Please see [LICENSE](https://github.com/stacksjs/stacks/t
 Made with 💙
 
 <!-- Badges -->
-[npm-version-src]: https://img.shields.io/npm/v/bun-reverse-proxy?style=flat-square
-[npm-version-href]: https://npmjs.com/package/bun-reverse-proxy
+[npm-version-src]: https://img.shields.io/npm/v/@stacksjs/reverse-proxy?style=flat-square
+[npm-version-href]: https://npmjs.com/package/@stacksjs/reverse-proxy
 [github-actions-src]: https://img.shields.io/github/actions/workflow/status/stacksjs/reverse-proxy/ci.yml?style=flat-square&branch=main
 [github-actions-href]: https://github.com/stacksjs/reverse-proxy/actions?query=workflow%3Aci
 
