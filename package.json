@@ -44,30 +44,27 @@
   "scripts": {
     "build": "bun build.ts && bun run compile",
     "compile": "bun build ./bin/cli.ts --compile --minify --outfile dist/reverse-proxy",
-    "lint": "bunx biome check .",
-    "lint:fix": "bunx biome check --apply .",
+    "lint": "bunx eslint .",
+    "lint:fix": "bunx eslint . --fix",
     "fresh": "bunx rimraf node_modules/ bun.lock && bun i",
     "commit": "git cz",
     "changelog": "bunx changelogen --output CHANGELOG.md",
     "prepublishOnly": "bun --bun run build",
     "release": "bun run changelog && bunx bumpp package.json --all",
     "test": "bun test",
-    "typecheck": "bun --bun tsc --noEmit",
+    "typecheck": "bunx tsc --noEmit",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },
-  "dependencies": {
-    "@stacksjs/cli": "^0.64.6",
-    "@stacksjs/storage": "^0.64.6",
-    "c12": "^2.0.1"
-  },
   "devDependencies": {
-    "@biomejs/biome": "1.9.3",
-    "@stacksjs/biome-config": "0.1.5",
-    "@stacksjs/development": "^0.64.6",
+    "@stacksjs/cli": "^0.65.0",
+    "@stacksjs/eslint-config": "^3.7.3-stacks-1.11",
+    "@stacksjs/development": "^0.65.0",
+    "@stacksjs/storage": "^0.65.0",
     "@types/bun": "^1.1.10",
     "bun-plugin-dts-auto": "^0.20.5",
+    "c12": "^2.0.1",
     "vitepress": "^1.4.0"
   },
   "simple-git-hooks": {
@@ -75,7 +72,7 @@
     "commit-msg": "bunx --no -- commitlint --edit $1"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,vue}": "bunx biome check --apply ."
+    "*.{js,jsx,ts,tsx,vue}": "bunx eslint . --fix"
   },
   "config": {
     "commitizen": {

@@ -1,5 +1,4 @@
 import * as http from 'node:http'
-import * as https from 'node:https'
 import * as net from 'node:net'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'

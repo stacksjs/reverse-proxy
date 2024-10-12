@@ -1,4 +1,4 @@
-import { log } from '@stacksjs/logging'
+import { log } from '@stacksjs/cli'
 import { $ } from 'bun'
 import dts from 'bun-plugin-dts-auto'
 
