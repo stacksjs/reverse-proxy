@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { setupReverseProxy, startHttpRedirectServer, startProxies, startProxy, startServer } from '../src/start'
 import type { ReverseProxyOption } from '../src/types'
 
@@ -8,6 +8,10 @@ const mockLog = {
   info: mock(),
 }
 
+mock.module("node:fs/promises", () => ({
+  mkdir: mock(),
+}));
+
 mock.module('@stacksjs/cli', () => ({
   log: mockLog,
   bold: mock((str) => str),
@@ -16,6 +20,10 @@ mock.module('@stacksjs/cli', () => ({
 }))
 
 describe('@stacksjs/reverse-proxy', () => {
+  beforeAll(() => {
+    process.env.APP_ENV = 'test'
+  })
+
   beforeEach(() => {
     // Reset all mocks before each test
     mock.restore()
@@ -65,6 +73,38 @@ describe('@stacksjs/reverse-proxy', () => {
       }))
 
       expect(startServer()).rejects.toThrow('Cannot start reverse proxy because localhost:3000 is unreachable.')
+    })
+
+    it('starts the server with a subdomain', async () => {
+      const mockConnect = mock(() => {
+        return {
+          on: mock(),
+          end: mock(),
+        }
+      })
+      mock.module('node:net', () => ({
+        connect: mockConnect,
+      }))
+
+      const mockSetupReverseProxy = mock()
+      mock.module('../src/start', () => ({
+        ...require('../src/start'),
+        setupReverseProxy: mockSetupReverseProxy,
+      }))
+
+      const subdomainOption: ReverseProxyOption = {
+        from: 'localhost:3000',
+        to: 'subdomain.example.com'
+      }
+      await startServer(subdomainOption)
+
+      expect(mockConnect).toHaveBeenCalledWith(3000, 'localhost', expect.any(Function))
+      expect(mockSetupReverseProxy).toHaveBeenCalledWith({
+        ...subdomainOption,
+        hostname: 'localhost',
+        port: 3000,
+      })
+      expect(mockLog.debug).toHaveBeenCalledWith('Starting Reverse Proxy Server', subdomainOption)
     })
   })
 
@@ -122,6 +162,63 @@ describe('@stacksjs/reverse-proxy', () => {
       expect(mockLog.error).toHaveBeenCalled()
       expect(mockLog.info).toHaveBeenCalled()
       expect(mockExit).toHaveBeenCalledWith(1)
+    })
+
+    it('sets up the reverse proxy server for a subdomain', () => {
+      const mockHttpServer = {
+        listen: mock(),
+      }
+      const mockCreateServer = mock(() => mockHttpServer)
+      mock.module('node:http', () => ({
+        createServer: mockCreateServer,
+      }))
+
+      const mockTestServer = {
+        once: mock((event, callback) => {
+          if (event === 'listening') callback()
+        }),
+        close: mock((callback) => callback()),
+        listen: mock(),
+      }
+      mock.module('node:net', () => ({
+        createServer: mock(() => mockTestServer),
+      }))
+
+      const subdomainOption: ReverseProxyOption = {
+        hostname: 'localhost',
+        port: 3000,
+        from: 'localhost:3000',
+        to: 'subdomain.example.com'
+      }
+      setupReverseProxy(subdomainOption)
+
+      expect(mockLog.debug).toHaveBeenCalledWith('setupReverseProxy', subdomainOption)
+      expect(mockCreateServer).toHaveBeenCalled()
+      expect(mockHttpServer.listen).toHaveBeenCalledWith(80, '0.0.0.0', expect.any(Function))
+
+      // Check if the 'host' header is set correctly for the subdomain
+      const createServerCallback = mockCreateServer.mock.calls[0]?.[0]
+      const mockReq = { url: '/', method: 'GET', headers: {} }
+      const mockRes = { writeHead: mock(), end: mock() }
+      const mockProxyReq = { on: mock(), end: mock() }
+
+      mock.module('node:http', () => ({
+        ...require('node:http'),
+        request: mock(() => mockProxyReq),
+      }))
+
+      createServerCallback(mockReq, mockRes)
+
+      expect(require('node:http').request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          hostname: 'localhost',
+          port: 3000,
+          headers: expect.objectContaining({
+            host: 'subdomain.example.com',
+          }),
+        }),
+        expect.any(Function)
+      )
     })
   })
 

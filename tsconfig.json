@@ -16,6 +16,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true,
+    "isolatedDeclarations": true,
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
   }

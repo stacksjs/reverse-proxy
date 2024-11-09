@@ -1,8 +1,9 @@
+import type { ReverseProxyOption, ReverseProxyOptions } from './types'
 import * as http from 'node:http'
 import * as net from 'node:net'
+import process from 'node:process'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
-import type { ReverseProxyOption, ReverseProxyOptions } from './types'
 
 export async function startServer(
   options: ReverseProxyOption = { from: 'localhost:3000', to: 'stacks.localhost' },
@@ -83,9 +84,13 @@ export function setupReverseProxy(options: ReverseProxyOption): void {
       })
 
       httpServer.listen(80, '0.0.0.0', () => {
+        // eslint-disable-next-line no-console
         console.log('')
+        // eslint-disable-next-line no-console
         console.log(`  ${green(bold('reverse-proxy'))} ${green(`v${version}`)}`)
+        // eslint-disable-next-line no-console
         console.log('')
+        // eslint-disable-next-line no-console
         console.log(`  ${green('➜')}  ${dim(from as string)} ${dim('➜')} http://${to}`)
       })
     })
@@ -112,7 +117,8 @@ export function startProxies(options?: ReverseProxyOptions): void {
     options.forEach((option: ReverseProxyOption) => {
       startServer(option)
     })
-  } else {
+  }
+  else {
     startServer(options)
   }
 }
