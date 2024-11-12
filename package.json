@@ -2,7 +2,7 @@
   "name": "@stacksjs/reverse-proxy",
   "type": "module",
   "version": "0.1.0",
-  "description": "A modern reverse proxy, powered by Bun.",
+  "description": "A modern reverse proxy.",
   "author": "Chris Breuer <chris@stacksjs.org>",
   "license": "MIT",
   "homepage": "https://github.com/stacksjs/reverse-proxy#readme",
@@ -62,19 +62,19 @@
     "release": "bun run changelog && bunx bumpp package.json --all",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "dev:docs": "vitepress dev docs",
+    "build:docs": "vitepress build docs",
+    "preview:docs": "vitepress preview docs"
   },
   "devDependencies": {
     "@stacksjs/cli": "^0.68.2",
     "@stacksjs/eslint-config": "^3.8.1-beta.2",
-    "@stacksjs/development": "^0.68.2",
     "@stacksjs/storage": "^0.68.2",
     "@types/bun": "^1.1.13",
     "bun-config": "^0.2.0",
     "bun-plugin-dtsx": "^0.21.8",
-    "vitepress": "^1.5.0"
+    "typescript": "^5.6.3",
+    "vitepress": "^1.4.0"
   },
   "simple-git-hooks": {
     "pre-commit": "bunx lint-staged"

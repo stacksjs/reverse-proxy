@@ -1,10 +1,10 @@
+import type { ReverseProxyOption } from '../src/types'
 import os from 'node:os'
-import { log, CAC } from '@stacksjs/cli'
+import { CAC, log } from '@stacksjs/cli'
 import { readFileSync, writeFileSync } from '@stacksjs/storage'
 import { version } from '../package.json'
 import { config } from '../src/config'
 import { startProxy } from '../src/start'
-import type { ReverseProxyOption } from '../src/types'
 
 const cli = new CAC('reverse-proxy')
 
@@ -43,8 +43,8 @@ cli
           certPath: options?.certPath,
         })
       }
-    } else {
-      // eslint-disable-next-line no-console
+    }
+    else {
       console.log('No proxies found in the config')
     }
   })
@@ -82,7 +82,8 @@ cli
             // If not, append it
             currentHostsContent += `\n${entry}`
             updated = true
-          } else {
+          }
+          else {
             log.info(`Entry for ${host} already exists in the hosts file.`)
           }
         }
@@ -90,22 +91,23 @@ cli
         if (updated) {
           writeFileSync(hostsFilePath, currentHostsContent, 'utf8')
           log.success('Hosts file updated with latest proxy domains.')
-        } else {
+        }
+        else {
           log.info('No new entries were added to the hosts file.')
         }
-      } catch (error: unknown) {
+      }
+      catch (error: unknown) {
         if ((error as NodeJS.ErrnoException).code === 'EACCES')
           console.error('Permission denied. Please run this command with administrative privileges.')
         else console.error(`An error occurred: ${(error as NodeJS.ErrnoException).message}`)
       }
-    } else {
-      // eslint-disable-next-line no-console
+    }
+    else {
       console.log('No proxies found. Is your config configured properly?')
     }
   })
 
 cli.command('version', 'Show the version of the Reverse Proxy CLI').action(() => {
-  // eslint-disable-next-line no-console
   console.log(version)
 })
 

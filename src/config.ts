@@ -1,12 +1,18 @@
 import type { ReverseProxyConfig } from './types'
 import { loadConfig } from 'bun-config'
 
-// Get loaded config
 // eslint-disable-next-line antfu/no-top-level-await
 const config: ReverseProxyConfig = await loadConfig({
   name: 'reverse-proxy',
   defaultConfig: {
-    'localhost:5173': 'stacks.localhost',
+    from: 'localhost:5137',
+    to: 'stacks.localhost',
+    key: undefined,
+    keyPath: undefined,
+    cert: undefined,
+    certPath: undefined,
+    httpsRedirect: false,
+    verbose: true,
   },
 })
 

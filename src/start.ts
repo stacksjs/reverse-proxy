@@ -5,9 +5,7 @@ import process from 'node:process'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 
-export async function startServer(
-  options: ReverseProxyOption = { from: 'localhost:3000', to: 'stacks.localhost' },
-): Promise<void> {
+export async function startServer(options: ReverseProxyOption = { from: 'localhost:5137', to: 'stacks.localhost' }): Promise<void> {
   log.debug('Starting Reverse Proxy Server', options)
 
   // Parse the option.from URL to dynamically set hostname and port
@@ -16,7 +14,7 @@ export async function startServer(
       ? options.from.startsWith('http')
         ? options.from
         : `http://${options.from}`
-      : 'http://localhost:3000',
+      : 'http://localhost:5137',
   )
   const hostname = fromUrl.hostname
   const port = Number.parseInt(fromUrl.port) || (fromUrl.protocol === 'https:' ? 443 : 80)

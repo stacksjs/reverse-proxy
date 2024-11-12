@@ -1,6 +1,6 @@
-import { log } from '@stacksjs/cli'
 import { $ } from 'bun'
-import dts from 'bun-plugin-dts-auto'
+import { log } from '@stacksjs/cli'
+import { dts } from 'bun-plugin-dtsx'
 
 log.info('Building...')
 
