@@ -1,6 +1,16 @@
-export default {
-  'localhost:5173': 'stacks.localhost',
-  // 'localhost:3333': 'docs.stacks.localhost',
-  // 'localhost:8080': 'api.stacks.localhost',
-  // 'localhost:1234': 'example.test',
-}
+import type { ReverseProxyOptions } from './src/types'
+
+const config: ReverseProxyOptions = [
+  {
+    from: 'localhost:5173',
+    to: 'stacks.localhost',
+    // key: 'content of the key',
+    keyPath: '/absolute/path/to/the/key',
+    // cert: 'content of the cert',
+    certPath: '/absolute/path/to/the/cert',
+    httpsRedirect: true,
+    verbose: false,
+  },
+]
+
+export default config

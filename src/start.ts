@@ -4,30 +4,38 @@ import * as net from 'node:net'
 import process from 'node:process'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
+import { config } from './config'
 
-export async function startServer(
-  options: ReverseProxyOption = { from: 'localhost:3000', to: 'stacks.localhost' },
-): Promise<void> {
+export async function startServer(options: ReverseProxyOption): Promise<void> {
   log.debug('Starting Reverse Proxy Server', options)
 
+  if (!options.from)
+    options.from = 'localhost:5173'
+  if (!options.to)
+    options.to = 'stacks.localhost'
+
+  // Ensure the from URL has a valid protocol
+  if (!options.from.startsWith('http://') && !options.from.startsWith('https://')) {
+    options.from = `http://${options.from}` // Default to http if no protocol is specified
+  }
+
   // Parse the option.from URL to dynamically set hostname and port
-  const fromUrl = new URL(
-    options.from
-      ? options.from.startsWith('http')
-        ? options.from
-        : `http://${options.from}`
-      : 'http://localhost:3000',
-  )
+  const fromUrl = new URL(options.from)
+  console.log('fromUrl', fromUrl)
   const hostname = fromUrl.hostname
-  const port = Number.parseInt(fromUrl.port) || (fromUrl.protocol === 'https:' ? 443 : 80)
+  const port = Number.parseInt(fromUrl.port) || (fromUrl.protocol.includes('https:') ? 443 : 80)
+  console.log('hostname', hostname)
+  console.log('port', port)
 
   // Attempt to connect to the specified host and port
   const socket = net.connect(port, hostname, () => {
     log.debug(`Successfully connected to ${options.from}`)
     socket.end()
 
+    const to = `${hostname}:${port}`
+
     // Proceed with setting up the reverse proxy after successful connection
-    setupReverseProxy({ ...options, hostname, port })
+    setupReverseProxy({ ...options, to })
   })
 
   socket.on('error', (err) => {
@@ -39,7 +47,7 @@ export async function startServer(
 export function setupReverseProxy(options: ReverseProxyOption): void {
   log.debug('setupReverseProxy', options)
 
-  const { hostname, port, from, to } = options
+  const { from, to } = options
 
   // Check if port 80 is in use
   const testServer = net.createServer()
@@ -57,11 +65,10 @@ export function setupReverseProxy(options: ReverseProxyOption): void {
       const httpServer = http.createServer((req, res) => {
         // Define the target server's options
         const options = {
-          hostname,
-          port,
+          to,
           path: req.url,
           method: req.method,
-          headers: { ...req.headers, host: `${hostname}:${port}` }, // Update the host header
+          headers: { ...req.headers, host: to },
         }
 
         // Create a request to the target server
@@ -109,6 +116,9 @@ export function startHttpRedirectServer(): void {
 }
 
 export function startProxy(option?: ReverseProxyOption): void {
+  if (!option)
+    option = config
+
   startServer(option)
 }
 

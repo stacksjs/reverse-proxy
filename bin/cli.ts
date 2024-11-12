@@ -1,52 +1,32 @@
+import type { ReverseProxyOption } from '../src/types'
 import os from 'node:os'
-import { log, CAC } from '@stacksjs/cli'
+import { CAC, log } from '@stacksjs/cli'
 import { readFileSync, writeFileSync } from '@stacksjs/storage'
 import { version } from '../package.json'
 import { config } from '../src/config'
 import { startProxy } from '../src/start'
-import type { ReverseProxyOption } from '../src/types'
 
 const cli = new CAC('reverse-proxy')
 
 cli
   .command('start', 'Start the Reverse Proxy Server')
-  .option('--from <from>', 'The URL to proxy from')
-  .option('--to <to>', 'The URL to proxy to')
-  .option('--keyPath <path>', 'Absolute path to the SSL key')
-  .option('--certPath <path>', 'Absolute path to the SSL certificate')
-  .option('--verbose', 'Enable verbose logging', { default: false })
-  .example('reverse-proxy start --from localhost:3000 --to my-project.localhost')
-  .example('reverse-proxy start --from localhost:3001 --to my-project.localhost/api')
+  .option('--from <from>', 'The URL to proxy from', { default: config.from })
+  .option('--to <to>', 'The URL to proxy to', { default: config.to })
+  .option('--key-path <path>', 'Absolute path to the SSL key', { default: config.keyPath })
+  .option('--cert-path <path>', 'Absolute path to the SSL certificate', { default: config.certPath })
+  .option('--verbose', 'Enable verbose logging', { default: config.verbose })
+  .example('reverse-proxy start --from localhost:5173 --to my-project.localhost')
+  .example('reverse-proxy start --from localhost:3000 --to my-project.localhost/api')
   .example('reverse-proxy start --from localhost:3000 --to localhost:3001')
-  .example(
-    'reverse-proxy start --from localhost:3000 --to my-project.test --keyPath /absolute/path/to/key --certPath /absolute/path/to/cert',
-  )
+  .example('reverse-proxy start --from localhost:5173 --to my-project.test --key-path /absolute/path/to/key --cert-path /absolute/path/to/cert')
   .action(async (options?: ReverseProxyOption) => {
-    if (options?.from || options?.to) {
-      startProxy({
-        from: options?.from ?? 'localhost:3000',
-        to: options?.to ?? 'stacks.localhost',
-        keyPath: options?.keyPath,
-        certPath: options?.certPath,
-      })
-
-      return
-    }
-
-    // loop over the config and start all the proxies
-    if (config) {
-      for (const [from, to] of Object.entries(config)) {
-        startProxy({
-          from,
-          to,
-          keyPath: options?.keyPath,
-          certPath: options?.certPath,
-        })
-      }
-    } else {
-      // eslint-disable-next-line no-console
-      console.log('No proxies found in the config')
-    }
+    startProxy({
+      from: options?.from,
+      to: options?.to,
+      keyPath: options?.keyPath,
+      certPath: options?.certPath,
+      verbose: options?.verbose,
+    })
   })
 
 cli
@@ -82,7 +62,8 @@ cli
             // If not, append it
             currentHostsContent += `\n${entry}`
             updated = true
-          } else {
+          }
+          else {
             log.info(`Entry for ${host} already exists in the hosts file.`)
           }
         }
@@ -90,22 +71,23 @@ cli
         if (updated) {
           writeFileSync(hostsFilePath, currentHostsContent, 'utf8')
           log.success('Hosts file updated with latest proxy domains.')
-        } else {
+        }
+        else {
           log.info('No new entries were added to the hosts file.')
         }
-      } catch (error: unknown) {
+      }
+      catch (error: unknown) {
         if ((error as NodeJS.ErrnoException).code === 'EACCES')
           console.error('Permission denied. Please run this command with administrative privileges.')
         else console.error(`An error occurred: ${(error as NodeJS.ErrnoException).message}`)
       }
-    } else {
-      // eslint-disable-next-line no-console
+    }
+    else {
       console.log('No proxies found. Is your config configured properly?')
     }
   })
 
 cli.command('version', 'Show the version of the Reverse Proxy CLI').action(() => {
-  // eslint-disable-next-line no-console
   console.log(version)
 })
 
