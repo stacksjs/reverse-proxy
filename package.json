@@ -74,7 +74,7 @@
     "bun-config": "^0.2.0",
     "bun-plugin-dtsx": "^0.21.8",
     "typescript": "^5.6.3",
-    "vitepress": "^1.4.0"
+    "vitepress": "^1.5.0"
   },
   "simple-git-hooks": {
     "pre-commit": "bunx lint-staged"
