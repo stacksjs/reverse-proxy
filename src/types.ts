@@ -5,6 +5,7 @@ export interface ReverseProxyConfig {
   keyPath?: string // absolute path to the key
   cert?: string // content of the cert
   certPath?: string // absolute path to the cert
+  caCertPath?: string // absolute path to the ca cert
   httpsRedirect: boolean // redirect http to https, defaults to true
   verbose: boolean
 }

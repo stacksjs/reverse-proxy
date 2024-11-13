@@ -7,10 +7,6 @@ export const config: ReverseProxyConfig = await loadConfig({
   defaultConfig: {
     from: 'localhost:5173',
     to: 'stacks.localhost',
-    key: undefined,
-    keyPath: undefined,
-    cert: undefined,
-    certPath: undefined,
     httpsRedirect: false,
     verbose: true,
   },
