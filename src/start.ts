@@ -1,5 +1,7 @@
 /* eslint-disable no-console */
-import type { ReverseProxyOption, ReverseProxyOptions } from './types'
+import type { SecureServerOptions } from 'node:http2'
+import type { ServerOptions } from 'node:https'
+import type { ProxySetupOptions, ReverseProxyOption, ReverseProxyOptions, SSLConfig } from './types'
 import * as fs from 'node:fs'
 import * as http from 'node:http'
 import * as https from 'node:https'
@@ -11,23 +13,6 @@ import { config } from './config'
 
 // Keep track of all running servers for cleanup
 const activeServers: Set<http.Server | https.Server> = new Set()
-
-interface SSLConfig {
-  key: string
-  cert: string
-  ca?: string | string[]
-  secureOptions?: number
-}
-
-/**
- * Custom error class for SSL-related errors
- */
-class SSLError extends Error {
-  constructor(message: string, public cause?: Error) {
-    super(message)
-    this.name = 'SSLError'
-  }
-}
 
 /**
  * Cleanup function to close all servers and exit gracefully
@@ -62,23 +47,32 @@ process.on('uncaughtException', (err) => {
 /**
  * Load SSL certificates from files or use provided strings
  */
-async function loadSSLConfig(options: ReverseProxyOption, _domain: string): Promise<SSLConfig | null> {
-  if (!options.keyPath || !options.certPath) {
+async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | null> {
+  // Early return for non-SSL configuration
+  if (!options.keyPath && !options.certPath)
     return null
+
+  if (options.keyPath && !options.certPath || !options.keyPath && options.certPath) {
+    const missing = !options.keyPath ? 'keyPath' : 'certPath'
+    throw new Error(`SSL Configuration requires both keyPath and certPath. Missing: ${missing}`)
   }
 
   try {
-    // Only load key and cert, ignore CA for now
-    const [key, cert] = await Promise.all([
-      fs.promises.readFile(options.keyPath, 'utf8'),
-      fs.promises.readFile(options.certPath, 'utf8'),
-    ])
+    if (!options.keyPath || !options.certPath)
+      return null
+
+    const key = await fs.promises.readFile(options.keyPath, 'utf8')
+    const cert = await fs.promises.readFile(options.certPath, 'utf8')
 
     return { key, cert }
   }
   catch (err) {
-    log.error('Failed to load SSL certificates:', err)
-    throw err
+    const error = err as NodeJS.ErrnoException
+    const detail = error.code === 'ENOENT'
+      ? `File not found: ${error.path}`
+      : error.message
+
+    throw new Error(`SSL Configuration Error: ${detail}`)
   }
 }
 
@@ -148,63 +142,37 @@ async function testConnection(hostname: string, port: number): Promise<void> {
 }
 
 export async function startServer(options: ReverseProxyOption): Promise<void> {
-  log.debug('Starting Reverse Proxy Server', options)
+  if (!options.from)
+    options.from = config.from
+  if (!options.to)
+    options.to = config.to
 
+  const fromUrl = new URL(options.from.startsWith('http') ? options.from : `http://${options.from}`)
+  const toUrl = new URL(options.to.startsWith('http') ? options.to : `http://${options.to}`)
+  const fromPort = Number.parseInt(fromUrl.port) || (fromUrl.protocol.includes('https:') ? 443 : 80)
+
+  // Test connection to source server before proceeding
   try {
-    if (!options.from)
-      options.from = config.from
-    if (!options.to)
-      options.to = config.to
-
-    // Ensure URLs have protocols
-    if (!options.from.startsWith('http://') && !options.from.startsWith('https://'))
-      options.from = `http://${options.from}`
-
-    if (!options.to.startsWith('http://') && !options.to.startsWith('https://'))
-      options.to = `http://${options.to}`
-
-    const fromUrl = new URL(options.from)
-    const toUrl = new URL(options.to)
-    const fromPort = Number.parseInt(fromUrl.port) || (fromUrl.protocol.includes('https:') ? 443 : 80)
-
-    // Extract domain from the target URL
-    const domain = toUrl.hostname
-
-    // Load SSL config with domain
-    const sslConfig = await loadSSLConfig(options, domain)
-      .catch((err: Error) => {
-        log.error(`SSL Configuration Error: ${err.message}`)
-        if (err instanceof SSLError && err.cause) {
-          log.error('Caused by:', err.cause.message)
-        }
-        process.exit(1)
-      })
-
-    // Test connection to source server
-    try {
-      await testConnection(fromUrl.hostname, fromPort)
-    }
-    catch (err) {
-      log.error((err as Error).message)
-      process.exit(1)
-    }
-
-    await setupReverseProxy({
-      ...options,
-      to: toUrl.hostname,
-      fromPort,
-      sourceUrl: fromUrl,
-      ssl: sslConfig,
-    })
+    await testConnection(fromUrl.hostname, fromPort)
   }
   catch (err) {
-    log.error('Failed to start reverse proxy server:')
     log.error((err as Error).message)
-    if (err instanceof SSLError && err.cause) {
-      log.error('Caused by:', err.cause.message)
-    }
     process.exit(1)
   }
+
+  const sslConfig = await loadSSLConfig(options)
+
+  await setupReverseProxy({
+    ...options,
+    from: options.from,
+    to: toUrl.hostname,
+    fromPort,
+    sourceUrl: {
+      hostname: fromUrl.hostname,
+      host: fromUrl.host,
+    },
+    ssl: sslConfig,
+  })
 }
 
 async function createProxyServer(
@@ -213,7 +181,7 @@ async function createProxyServer(
   fromPort: number,
   listenPort: number,
   hostname: string,
-  sourceUrl: URL,
+  sourceUrl: Pick<URL, 'hostname' | 'host'>,
   ssl: SSLConfig | null,
 ): Promise<void> {
   const requestHandler = (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -250,36 +218,30 @@ async function createProxyServer(
   }
 
   // Complete SSL configuration
-  const serverOptions = ssl ? {
-    key: ssl.key,
-    cert: ssl.cert,
-    ca: ssl.ca,
+  const serverOptions: (ServerOptions & SecureServerOptions) | undefined = ssl
+    ? {
+        key: ssl.key,
+        cert: ssl.cert,
+        ca: ssl.ca,
+        minVersion: 'TLSv1.2' as const,
+        maxVersion: 'TLSv1.3' as const,
+        requestCert: false,
+        rejectUnauthorized: false,
+        ciphers: [
+          'TLS_AES_128_GCM_SHA256',
+          'TLS_AES_256_GCM_SHA384',
+          'TLS_CHACHA20_POLY1305_SHA256',
+          'ECDHE-ECDSA-AES128-GCM-SHA256',
+          'ECDHE-RSA-AES128-GCM-SHA256',
+          'ECDHE-ECDSA-AES256-GCM-SHA384',
+          'ECDHE-RSA-AES256-GCM-SHA384',
+        ].join(':'),
+        allowHTTP1: true,
+        ALPNProtocols: ['h2', 'http/1.1'],
+      }
+    : undefined
 
-    // Modern TLS configuration
-    minVersion: 'TLSv1.2',
-    maxVersion: 'TLSv1.3',
-
-    // Explicitly disable client certificate requirements
-    requestCert: false,
-    rejectUnauthorized: false,
-
-    // Modern cipher configuration
-    ciphers: [
-      'TLS_AES_128_GCM_SHA256',
-      'TLS_AES_256_GCM_SHA384',
-      'TLS_CHACHA20_POLY1305_SHA256',
-      'ECDHE-ECDSA-AES128-GCM-SHA256',
-      'ECDHE-RSA-AES128-GCM-SHA256',
-      'ECDHE-ECDSA-AES256-GCM-SHA384',
-      'ECDHE-RSA-AES256-GCM-SHA384',
-    ].join(':'),
-
-    // Enable HTTP/2
-    allowHTTP1: true,
-    ALPNProtocols: ['h2', 'http/1.1'],
-  } : undefined
-
-  const server = ssl
+  const server = ssl && serverOptions
     ? https.createServer(serverOptions, requestHandler)
     : http.createServer(requestHandler)
 
@@ -319,18 +281,13 @@ async function createProxyServer(
   })
 }
 
-export async function setupReverseProxy(options: ReverseProxyOption & {
-  fromPort: number
-  sourceUrl: URL
-  ssl: SSLConfig | null
-}): Promise<void> {
+export async function setupReverseProxy(options: ProxySetupOptions): Promise<void> {
   const { from, to, fromPort, sourceUrl, ssl } = options
   const httpPort = 80
   const httpsPort = 443
   const hostname = '0.0.0.0'
 
   try {
-    // Start HTTP server (for redirects if SSL is enabled)
     if (ssl) {
       const isHttpPortBusy = await isPortInUse(httpPort, hostname)
       if (!isHttpPortBusy) {
@@ -341,7 +298,6 @@ export async function setupReverseProxy(options: ReverseProxyOption & {
       }
     }
 
-    // Start main server (HTTP or HTTPS)
     const targetPort = ssl ? httpsPort : httpPort
     const isTargetPortBusy = await isPortInUse(targetPort, hostname)
 
@@ -376,18 +332,21 @@ export function startHttpRedirectServer(): void {
   activeServers.add(server)
 }
 
-export function startProxy(option?: ReverseProxyOption): void {
-  option = {
+export function startProxy(options?: ReverseProxyOption): void {
+  const finalOptions = {
     ...config,
-    ...option,
+    ...options,
   }
 
-  startServer(option).catch((err) => {
-    log.error('Failed to start proxy:')
-    log.error(err.message)
-    if (err instanceof SSLError && err.cause) {
-      log.error('Caused by:', err.cause.message)
-    }
+  log.debug('Starting proxy with options:', {
+    from: finalOptions.from,
+    to: finalOptions.to,
+    keyPath: finalOptions.keyPath,
+    certPath: finalOptions.certPath,
+  })
+
+  startServer(finalOptions).catch((err) => {
+    log.error(`Failed to start proxy: ${err.message}`)
     cleanup()
   })
 }
@@ -400,7 +359,7 @@ export function startProxies(options?: ReverseProxyOptions): void {
         cleanup()
       })
   }
-  else {
+  else if (options) {
     startServer(options).catch((err) => {
       log.error('Failed to start proxy:', err)
       cleanup()
