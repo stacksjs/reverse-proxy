@@ -15,8 +15,8 @@
     "outDir": "./dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "verbatimModuleSyntax": true,
     "isolatedDeclarations": true,
+    "verbatimModuleSyntax": true,
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
   }

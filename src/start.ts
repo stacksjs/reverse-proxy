@@ -52,7 +52,7 @@ async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | n
   if (!options.keyPath && !options.certPath)
     return null
 
-  if (options.keyPath && !options.certPath || !options.keyPath && options.certPath) {
+  if ((options.keyPath && !options.certPath) || (!options.keyPath && options.certPath)) {
     const missing = !options.keyPath ? 'keyPath' : 'certPath'
     throw new Error(`SSL Configuration requires both keyPath and certPath. Missing: ${missing}`)
   }
@@ -141,7 +141,10 @@ async function testConnection(hostname: string, port: number): Promise<void> {
   })
 }
 
-export async function startServer(options: ReverseProxyOption): Promise<void> {
+export async function startServer(options?: ReverseProxyOption): Promise<void> {
+  if (!options)
+    options = config
+
   if (!options.from)
     options.from = config.from
   if (!options.to)

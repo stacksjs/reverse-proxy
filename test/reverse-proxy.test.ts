@@ -1,6 +1,6 @@
+import type { ReverseProxyOption } from '../src/types'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test'
 import { setupReverseProxy, startHttpRedirectServer, startProxies, startProxy, startServer } from '../src/start'
-import type { ReverseProxyOption } from '../src/types'
 
 const mockLog = {
   debug: mock(),
@@ -8,15 +8,15 @@ const mockLog = {
   info: mock(),
 }
 
-mock.module("node:fs/promises", () => ({
+mock.module('node:fs/promises', () => ({
   mkdir: mock(),
-}));
+}))
 
 mock.module('@stacksjs/cli', () => ({
   log: mockLog,
-  bold: mock((str) => str),
-  dim: mock((str) => str),
-  green: mock((str) => str),
+  bold: mock(str => str),
+  dim: mock(str => str),
+  green: mock(str => str),
 }))
 
 describe('@stacksjs/reverse-proxy', () => {
@@ -31,9 +31,9 @@ describe('@stacksjs/reverse-proxy', () => {
     // Re-mock @stacksjs/cli after restoring all mocks
     mock.module('@stacksjs/cli', () => ({
       log: mockLog,
-      bold: mock((str) => str),
-      dim: mock((str) => str),
-      green: mock((str) => str),
+      bold: mock(str => str),
+      dim: mock(str => str),
+      green: mock(str => str),
     }))
   })
 
@@ -63,7 +63,8 @@ describe('@stacksjs/reverse-proxy', () => {
       const mockConnect = mock(() => {
         return {
           on: (event: string, handler: (err: Error) => void) => {
-            if (event === 'error') handler(new Error('Connection failed'))
+            if (event === 'error')
+              handler(new Error('Connection failed'))
           },
           end: mock(),
         }
@@ -88,13 +89,13 @@ describe('@stacksjs/reverse-proxy', () => {
 
       const mockSetupReverseProxy = mock()
       mock.module('../src/start', () => ({
-        ...require('../src/start'),
+        ...import('../src/start'),
         setupReverseProxy: mockSetupReverseProxy,
       }))
 
       const subdomainOption: ReverseProxyOption = {
         from: 'localhost:3000',
-        to: 'subdomain.example.com'
+        to: 'subdomain.example.com',
       }
       await startServer(subdomainOption)
 
@@ -120,9 +121,10 @@ describe('@stacksjs/reverse-proxy', () => {
 
       const mockTestServer = {
         once: mock((event, callback) => {
-          if (event === 'listening') callback()
+          if (event === 'listening')
+            callback()
         }),
-        close: mock((callback) => callback()),
+        close: mock(callback => callback()),
         listen: mock(),
       }
       mock.module('node:net', () => ({
@@ -137,7 +139,7 @@ describe('@stacksjs/reverse-proxy', () => {
     })
 
     it('handles port 80 already in use', () => {
-      const mockExit = mock((code: number) => {})
+      const mockExit = mock(() => {})
       process.exit = mockExit as any
 
       const mockTestServer = {
@@ -154,7 +156,10 @@ describe('@stacksjs/reverse-proxy', () => {
         createServer: mock(() => mockTestServer),
       }))
 
-      setupReverseProxy({ hostname: 'localhost', port: 3000, from: 'localhost:3000', to: 'example.com' })
+      setupReverseProxy({
+        from: 'localhost:3000',
+        to: 'example.com',
+      })
 
       expect(mockLog.debug).toHaveBeenCalledWith('setupReverseProxy', expect.any(Object))
       expect(mockTestServer.once).toHaveBeenCalledWith('error', expect.any(Function))
@@ -175,9 +180,10 @@ describe('@stacksjs/reverse-proxy', () => {
 
       const mockTestServer = {
         once: mock((event, callback) => {
-          if (event === 'listening') callback()
+          if (event === 'listening')
+            callback()
         }),
-        close: mock((callback) => callback()),
+        close: mock(callback => callback()),
         listen: mock(),
       }
       mock.module('node:net', () => ({
@@ -185,10 +191,8 @@ describe('@stacksjs/reverse-proxy', () => {
       }))
 
       const subdomainOption: ReverseProxyOption = {
-        hostname: 'localhost',
-        port: 3000,
         from: 'localhost:3000',
-        to: 'subdomain.example.com'
+        to: 'subdomain.example.com',
       }
       setupReverseProxy(subdomainOption)
 
@@ -203,13 +207,13 @@ describe('@stacksjs/reverse-proxy', () => {
       const mockProxyReq = { on: mock(), end: mock() }
 
       mock.module('node:http', () => ({
-        ...require('node:http'),
+        ...import('node:http'),
         request: mock(() => mockProxyReq),
       }))
 
       createServerCallback(mockReq, mockRes)
 
-      expect(require('node:http').request).toHaveBeenCalledWith(
+      expect(import('node:http').request).toHaveBeenCalledWith(
         expect.objectContaining({
           hostname: 'localhost',
           port: 3000,
@@ -217,7 +221,7 @@ describe('@stacksjs/reverse-proxy', () => {
             host: 'subdomain.example.com',
           }),
         }),
-        expect.any(Function)
+        expect.any(Function),
       )
     })
   })
@@ -243,7 +247,7 @@ describe('@stacksjs/reverse-proxy', () => {
     it('calls startServer with the provided option', async () => {
       const mockStartServer = mock(() => Promise.resolve())
       mock.module('../src/start', () => ({
-        ...require('../src/start'),
+        ...import('../src/start'),
         startServer: mockStartServer,
       }))
 
@@ -258,7 +262,7 @@ describe('@stacksjs/reverse-proxy', () => {
     it('starts multiple proxies when given an array', async () => {
       const mockStartServer = mock(() => Promise.resolve())
       mock.module('../src/start', () => ({
-        ...require('../src/start'),
+        ...import('../src/start'),
         startServer: mockStartServer,
       }))
 
@@ -276,7 +280,7 @@ describe('@stacksjs/reverse-proxy', () => {
     it('starts a single proxy when given a single option', async () => {
       const mockStartServer = mock(() => Promise.resolve())
       mock.module('../src/start', () => ({
-        ...require('../src/start'),
+        ...import('../src/start'),
         startServer: mockStartServer,
       }))
 
