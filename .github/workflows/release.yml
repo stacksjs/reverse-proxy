@@ -29,9 +29,6 @@ jobs:
       - name: Install Dependencies
         run: bun install
 
-      - name: Build the release
-        run: bun run build
-
       - name: Publish to npm
         run: bun publish --access public
         env:
@@ -41,3 +38,15 @@ jobs:
         run: bunx changelogithub
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Attach Binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bin/rpx-linux-x64
+            bin/rpx-linux-arm64
+            bin/rpx-windows-x64.exe
+            bin/rpx-darwin-x64
+            bin/rpx-darwin-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
