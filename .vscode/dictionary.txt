@@ -31,6 +31,7 @@ proxied
 socio
 Solana
 stacksjs
+tlsx
 typecheck
 unplugin
 unref

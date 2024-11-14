@@ -1,14 +1,9 @@
-import type { DeepPartial, TlsConfig } from '@stacksjs/tlsx'
+import type { TlsConfig } from '@stacksjs/tlsx'
 
 export interface ReverseProxyConfig {
-  from: string // domain to proxy from, defaults to localhost:3000
-  to: string // domain to proxy to, defaults to stacks.localhost
-  key?: string // content of the key
-  keyPath?: string // absolute path to the key
-  cert?: string // content of the cert
-  certPath?: string // absolute path to the cert
-  caCertPath?: string // absolute path to the ca cert
-  httpsRedirect: boolean // redirect http to https, defaults to true
+  from: string // localhost:5173
+  to: string // stacks.localhost
+  https: TlsConfig
   verbose: boolean
 }
 
@@ -29,3 +24,5 @@ export interface ProxySetupOptions extends Omit<ReverseProxyOption, 'from'> {
   from: string
   to: string
 }
+
+export type { TlsConfig }

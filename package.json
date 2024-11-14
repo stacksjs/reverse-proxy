@@ -1,17 +1,17 @@
 {
-  "name": "@stacksjs/reverse-proxy",
+  "name": "@stacksjs/rpx",
   "type": "module",
   "version": "0.1.0",
   "description": "A modern reverse proxy.",
   "author": "Chris Breuer <chris@stacksjs.org>",
   "license": "MIT",
-  "homepage": "https://github.com/stacksjs/reverse-proxy#readme",
+  "homepage": "https://github.com/stacksjs/rpx#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stacksjs/reverse-proxy.git"
+    "url": "git+https://github.com/stacksjs/rpx.git"
   },
   "bugs": {
-    "url": "https://github.com/stacksjs/reverse-proxy/issues"
+    "url": "https://github.com/stacksjs/rpx/issues"
   },
   "keywords": [
     "reverse proxy",
@@ -61,7 +61,7 @@
     "preview:docs": "vitepress preview docs"
   },
   "dependencies": {
-    "@stacksjs/tlsx": "^0.3.3"
+    "@stacksjs/tlsx": "^0.5.6"
   },
   "devDependencies": {
     "@stacksjs/cli": "^0.68.2",
