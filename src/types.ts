@@ -8,11 +8,12 @@ export interface ReverseProxyConfig {
   cert?: string // content of the cert
   certPath?: string // absolute path to the cert
   caCertPath?: string // absolute path to the ca cert
-  httpsRedirect: boolean // redirect http to https, defaults to true
+  https: boolean // use https, defaults to true
+  tls: boolean | TlsConfig // the tls configuration
   verbose: boolean
 }
 
-export type ReverseProxyOption = Partial<ReverseProxyConfig>
+export type ReverseProxyOption = DeepPartial<ReverseProxyConfig>
 export type ReverseProxyOptions = ReverseProxyOption | ReverseProxyOption[]
 
 export interface SSLConfig {

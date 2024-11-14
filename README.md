@@ -16,9 +16,8 @@
 - Custom Domains _(with wildcard support)_
 - Dependency-Free
 - Zero-Config Setup
-<!-- - SSL Support _(HTTPS by default)_ -->
-<!-- - Auto HTTP-to-HTTPS Redirection -->
-<!-- - `/etc/hosts` Management _(auto-updating)_ -->
+- SSL Support _(HTTPS by default)_
+- Auto HTTP-to-HTTPS Redirection
 
 ## Install
 
@@ -41,13 +40,29 @@ There are two ways of using this reverse proxy: _as a library or as a CLI._
 
 Given the npm package is installed:
 
-```js
+```ts
 import { startProxy } from '@stacksjs/reverse-proxy'
 
-startProxy({
+export interface ReverseProxyConfig {
+  from: string // domain to proxy from, defaults to localhost:3000
+  to: string // domain to proxy to, defaults to stacks.localhost
+  key?: string // content of the key
+  keyPath?: string // absolute path to the key
+  cert?: string // content of the cert
+  certPath?: string // absolute path to the cert
+  caCertPath?: string // absolute path to the ca cert
+  https: boolean // use https, defaults to true, also redirects http to https
+  tls: TlsConfig // the tls configuration
+  verbose: boolean // log verbose output, defaults to false
+}
+
+const config: ReverseProxyOptions = {
   from: 'localhost:3000',
-  to: 'my-project.localhost' // or try 'my-project.test'
-})
+  to: 'my-project.localhost',
+  https: true,
+}
+
+startProxy(config)
 ```
 
 ### CLI
@@ -65,9 +80,21 @@ The Reverse Proxy can be configured using a `reverse-proxy.config.ts` _(or `reve
 
 ```ts
 // reverse-proxy.config.ts (or reverse-proxy.config.js)
-export default {
-  'localhost:3000': 'stacks.localhost'
+import type { ReverseProxyOptions } from './src/types'
+import os from 'node:os'
+import path from 'node:path'
+
+const config: ReverseProxyOptions = {
+  from: 'localhost:5173',
+  to: 'stacks.localhost',
+  keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
+  certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
+  caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
+  https: true,
+  verbose: false,
 }
+
+export default config
 ```
 
 _Then run:_
