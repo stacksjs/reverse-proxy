@@ -19,7 +19,7 @@ const activeServers: Set<http.Server | https.Server> = new Set()
 /**
  * Cleanup function to close all servers and exit gracefully
  */
-function cleanup() {
+export function cleanup(): void {
   debugLog('cleanup', 'Starting cleanup process', config.verbose)
   console.log(`\n`)
   log.info('Shutting down proxy servers...')
