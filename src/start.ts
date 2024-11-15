@@ -11,6 +11,7 @@ import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 import { generateCertficate } from './certificate'
 import { config } from './config'
+import { debugLog } from './utils'
 
 // Keep track of all running servers for cleanup
 const activeServers: Set<http.Server | https.Server> = new Set()
@@ -19,6 +20,7 @@ const activeServers: Set<http.Server | https.Server> = new Set()
  * Cleanup function to close all servers and exit gracefully
  */
 function cleanup() {
+  debugLog('cleanup', 'Starting cleanup process')
   console.log(`\n`)
   log.info('Shutting down proxy servers...')
 
@@ -29,9 +31,11 @@ function cleanup() {
   )
 
   Promise.all(closePromises).then(() => {
+    debugLog('cleanup', 'All servers closed successfully')
     log.success('All proxy servers shut down successfully')
     process.exit(0)
   }).catch((err) => {
+    debugLog('cleanup', `Error during cleanup: ${err.message}`)
     log.error('Error during shutdown:', err)
     process.exit(1)
   })
@@ -41,6 +45,7 @@ function cleanup() {
 process.on('SIGINT', cleanup)
 process.on('SIGTERM', cleanup)
 process.on('uncaughtException', (err) => {
+  debugLog('process', `Uncaught exception: ${err.message}`)
   log.error('Uncaught exception:', err)
   cleanup()
 })
@@ -49,14 +54,20 @@ process.on('uncaughtException', (err) => {
  * Load SSL certificates from files or use provided strings
  */
 async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | null> {
+  debugLog('ssl', 'Loading SSL configuration')
+
   // If HTTPS is explicitly disabled, return null
-  if (options.https === false)
+  if (options.https === false) {
+    debugLog('ssl', 'HTTPS is disabled, skipping SSL configuration')
     return null
+  }
 
   // If HTTPS is true and paths are specified, they must exist
   if (options.https === true && (options.keyPath || options.certPath)) {
+    debugLog('ssl', 'Loading SSL certificates from files')
     if (!options.keyPath || !options.certPath) {
       const missing = !options.keyPath ? 'keyPath' : 'certPath'
+      debugLog('ssl', `Missing required SSL path: ${missing}`)
       throw new Error(`SSL Configuration requires both keyPath and certPath. Missing: ${missing}`)
     }
 
@@ -76,14 +87,17 @@ async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | n
       // If caCertPath is specified, it must exist too
       let ca: string | undefined
       if (options.caCertPath) {
+        debugLog('ssl', 'Loading CA certificate')
         try {
           ca = await fs.promises.readFile(options.caCertPath, 'utf8')
         }
         catch (err) {
+          debugLog('ssl', `Failed to read CA certificate: ${(err as Error).message}`)
           throw new Error(`Failed to read CA certificate: ${(err as Error).message}`)
         }
       }
 
+      debugLog('ssl', 'SSL certificates loaded successfully')
       return { key, cert, ...(ca ? { ca } : {}) }
     }
     catch (err) {
@@ -92,23 +106,28 @@ async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | n
         ? `File not found: ${error.path}`
         : error.message
 
+      debugLog('ssl', `SSL Configuration Error: ${detail}`)
       throw new Error(`SSL Configuration Error:\n${detail}.\nHTTPS was explicitly enabled but certificate files are missing.`)
     }
   }
 
   // If HTTPS is true but no paths specified, check for direct cert content
   if (options.https === true && options.key && options.cert) {
+    debugLog('ssl', 'Using provided SSL certificate strings')
     return {
       key: options.key,
       cert: options.cert,
     }
   }
 
-  // If HTTPS is true but no certificates provided at all, throw error
-  if (options.https === true)
+  // If HTTPS is true but no certificates provided at all, generate certificate
+  if (options.https === true) {
+    debugLog('ssl', 'Generating self-signed certificate')
     return await generateCertficate(options)
+  }
 
   // Default to no SSL
+  debugLog('ssl', 'No SSL configuration provided')
   return null
 }
 
@@ -116,16 +135,19 @@ async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | n
  * Check if a port is in use
  */
 function isPortInUse(port: number, hostname: string): Promise<boolean> {
+  debugLog('port', `Checking if port ${port} is in use on ${hostname}`)
   return new Promise((resolve) => {
     const server = net.createServer()
 
     server.once('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE') {
+        debugLog('port', `Port ${port} is in use`)
         resolve(true)
       }
     })
 
     server.once('listening', () => {
+      debugLog('port', `Port ${port} is available`)
       server.close()
       resolve(false)
     })
@@ -138,11 +160,13 @@ function isPortInUse(port: number, hostname: string): Promise<boolean> {
  * Find next available port
  */
 async function findAvailablePort(startPort: number, hostname: string): Promise<number> {
+  debugLog('port', `Finding available port starting from ${startPort}`)
   let port = startPort
   while (await isPortInUse(port, hostname)) {
-    log.debug(`Port ${port} is in use, trying ${port + 1}`)
+    debugLog('port', `Port ${port} is in use, trying ${port + 1}`)
     port++
   }
+  debugLog('port', `Found available port: ${port}`)
   return port
 }
 
@@ -150,9 +174,8 @@ async function findAvailablePort(startPort: number, hostname: string): Promise<n
  * Test connection to a server
  */
 async function testConnection(hostname: string, port: number): Promise<void> {
+  debugLog('connection', `Testing connection to ${hostname}:${port}`)
   return new Promise<void>((resolve, reject) => {
-    log.debug(`Testing connection to ${hostname}:${port}...`)
-
     const socket = net.connect({
       host: hostname,
       port,
@@ -160,17 +183,19 @@ async function testConnection(hostname: string, port: number): Promise<void> {
     })
 
     socket.once('connect', () => {
-      log.debug(`Successfully connected to ${hostname}:${port}`)
+      debugLog('connection', `Successfully connected to ${hostname}:${port}`)
       socket.end()
       resolve()
     })
 
     socket.once('timeout', () => {
+      debugLog('connection', `Connection to ${hostname}:${port} timed out`)
       socket.destroy()
       reject(new Error(`Connection to ${hostname}:${port} timed out`))
     })
 
     socket.once('error', (err) => {
+      debugLog('connection', `Failed to connect to ${hostname}:${port}: ${err.message}`)
       socket.destroy()
       reject(new Error(`Failed to connect to ${hostname}:${port}: ${err.message}`))
     })
@@ -178,6 +203,7 @@ async function testConnection(hostname: string, port: number): Promise<void> {
 }
 
 export async function startServer(options?: ReverseProxyOption): Promise<void> {
+  debugLog('server', `Starting server with options: ${JSON.stringify(options)}`)
   // Merge with default config
   const mergedOptions: ReverseProxyOption = {
     ...config,
@@ -187,6 +213,8 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
   const { fromUrl, toUrl, protocol } = normalizeUrls(mergedOptions)
   const fromPort = Number.parseInt(fromUrl.port) || (protocol.includes('https:') ? 443 : 80)
 
+  debugLog('server', `Normalized URLs - From: ${fromUrl}, To: ${toUrl}, Protocol: ${protocol}`)
+
   // Load SSL config first to fail fast if certificates are missing
   const sslConfig = await loadSSLConfig(mergedOptions)
 
@@ -195,6 +223,7 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
     await testConnection(fromUrl.hostname, fromPort)
   }
   catch (err) {
+    debugLog('server', `Connection test failed: ${(err as Error).message}`)
     log.error((err as Error).message)
     process.exit(1)
   }
@@ -222,9 +251,11 @@ async function createProxyServer(
   ssl: SSLConfig | null,
   options: ReverseProxyOption,
 ): Promise<void> {
+  debugLog('proxy', `Creating proxy server ${from} -> ${to}`)
   const useHttps = options.https === true
 
   const requestHandler = (req: http.IncomingMessage, res: http.ServerResponse) => {
+    debugLog('request', `${req.method} ${req.url}`)
     const proxyOptions = {
       hostname: sourceUrl.hostname,
       port: fromPort,
@@ -237,6 +268,7 @@ async function createProxyServer(
     }
 
     const proxyReq = http.request(proxyOptions, (proxyRes) => {
+      debugLog('response', `${proxyRes.statusCode} ${req.url}`)
       // Add security headers
       const headers = {
         ...proxyRes.headers,
@@ -249,6 +281,7 @@ async function createProxyServer(
     })
 
     proxyReq.on('error', (err) => {
+      debugLog('proxy', `Proxy request failed: ${err.message}`)
       log.error('Proxy request failed:', err)
       res.writeHead(502)
       res.end(`Proxy Error: ${err.message}`)
@@ -286,12 +319,7 @@ async function createProxyServer(
 
   if (ssl) {
     server.on('secureConnection', (tlsSocket) => {
-      log.debug('TLS Connection:', {
-        protocol: tlsSocket.getProtocol?.(),
-        cipher: tlsSocket.getCipher?.(),
-        authorized: tlsSocket.authorized,
-        authError: tlsSocket.authorizationError,
-      })
+      debugLog('tls', `TLS Connection - Protocol: ${tlsSocket.getProtocol?.()}, Cipher: ${tlsSocket.getCipher?.()}, Authorized: ${tlsSocket.authorized}`)
     })
   }
 
@@ -299,6 +327,7 @@ async function createProxyServer(
 
   return new Promise((resolve, reject) => {
     server.listen(listenPort, hostname, () => {
+      debugLog('server', `Server listening on port ${listenPort}`)
       console.log('')
       console.log(`  ${green(bold('reverse-proxy'))} ${green(`v${version}`)}`)
       console.log('')
@@ -316,11 +345,15 @@ async function createProxyServer(
       resolve()
     })
 
-    server.on('error', reject)
+    server.on('error', (err) => {
+      debugLog('server', `Server error: ${(err as Error).message}`)
+      reject(err)
+    })
   })
 }
 
 export async function setupReverseProxy(options: ProxySetupOptions): Promise<void> {
+  debugLog('setup', `Setting up reverse proxy with options: ${JSON.stringify(options)}`)
   const { from, to, fromPort, sourceUrl, ssl } = options
   const httpPort = 80
   const httpsPort = 443
@@ -329,19 +362,24 @@ export async function setupReverseProxy(options: ProxySetupOptions): Promise<voi
 
   try {
     if (useHttps && ssl) {
+      debugLog('setup', 'Checking HTTP port for redirect server')
       const isHttpPortBusy = await isPortInUse(httpPort, hostname)
       if (!isHttpPortBusy) {
+        debugLog('setup', 'Starting HTTP redirect server')
         startHttpRedirectServer()
       }
       else {
+        debugLog('setup', 'Port 80 is in use, skipping HTTP redirect server')
         log.warn('Port 80 is in use, HTTP to HTTPS redirect will not be available')
       }
     }
 
     const targetPort = useHttps ? httpsPort : httpPort
+    debugLog('setup', `Checking if target port ${targetPort} is available`)
     const isTargetPortBusy = await isPortInUse(targetPort, hostname)
 
     if (isTargetPortBusy) {
+      debugLog('setup', `Target port ${targetPort} is busy, finding alternative`)
       const availablePort = await findAvailablePort(useHttps ? 8443 : 8080, hostname)
       log.warn(`Port ${targetPort} is in use. Using port ${availablePort} instead.`)
       log.info(`You can use 'sudo lsof -i :${targetPort}' (Unix) or 'netstat -ano | findstr :${targetPort}' (Windows) to check what's using the port.`)
@@ -349,19 +387,23 @@ export async function setupReverseProxy(options: ProxySetupOptions): Promise<voi
       await createProxyServer(from, to, fromPort, availablePort, hostname, sourceUrl, ssl, options)
     }
     else {
+      debugLog('setup', `Creating proxy server on port ${targetPort}`)
       await createProxyServer(from, to, fromPort, targetPort, hostname, sourceUrl, ssl, options)
     }
   }
   catch (err) {
+    debugLog('setup', `Failed to setup reverse proxy: ${(err as Error).message}`)
     log.error(`Failed to setup reverse proxy: ${(err as Error).message}`)
     cleanup()
   }
 }
 
 export function startHttpRedirectServer(): void {
+  debugLog('redirect', 'Starting HTTP redirect server')
   const server = http
     .createServer((req, res) => {
       const host = req.headers.host || ''
+      debugLog('redirect', `Redirecting ${req.url} to https://${host}${req.url}`)
       res.writeHead(301, {
         Location: `https://${host}${req.url}`,
       })
@@ -373,6 +415,7 @@ export function startHttpRedirectServer(): void {
 }
 
 export function startProxy(options?: ReverseProxyOption): void {
+  debugLog('proxy', `Starting proxy with options: ${JSON.stringify(options)}`)
   const finalOptions = {
     ...config,
     ...options,
@@ -380,6 +423,7 @@ export function startProxy(options?: ReverseProxyOption): void {
 
   // Remove SSL-related properties if HTTPS is disabled
   if (finalOptions.https === false) {
+    debugLog('proxy', 'HTTPS disabled, removing SSL options')
     delete finalOptions.keyPath
     delete finalOptions.certPath
     delete finalOptions.caCertPath
@@ -399,21 +443,27 @@ export function startProxy(options?: ReverseProxyOption): void {
   })
 
   startServer(finalOptions).catch((err) => {
+    debugLog('proxy', `Failed to start proxy: ${err.message}`)
     log.error(`Failed to start proxy: ${err.message}`)
     cleanup()
   })
 }
 
 export function startProxies(options?: ReverseProxyOptions): void {
+  debugLog('proxies', 'Starting multiple proxies')
   if (Array.isArray(options)) {
+    debugLog('proxies', `Starting ${options.length} proxies`)
     Promise.all(options.map(option => startServer(option)))
       .catch((err) => {
+        debugLog('proxies', `Failed to start proxies: ${err.message}`)
         log.error('Failed to start proxies:', err)
         cleanup()
       })
   }
   else if (options) {
+    debugLog('proxies', 'Starting single proxy')
     startServer(options).catch((err) => {
+      debugLog('proxies', `Failed to start proxy: ${err.message}`)
       log.error('Failed to start proxy:', err)
       cleanup()
     })
@@ -424,12 +474,15 @@ export function startProxies(options?: ReverseProxyOptions): void {
  * Create normalized URLs with correct protocol
  */
 function normalizeUrls(options: ReverseProxyOption) {
+  debugLog('urls', 'Normalizing URLs')
   const useHttps = options.https === true
   const protocol = useHttps ? 'https://' : 'http://'
 
   // Use default values if from/to are undefined
   const fromString = options.from || 'localhost:5173'
   const toString = options.to || 'stacks.localhost'
+
+  debugLog('urls', `Original URLs - From: ${fromString}, To: ${toString}`)
 
   const fromUrl = new URL(fromString.startsWith('http')
     ? fromString
@@ -438,6 +491,8 @@ function normalizeUrls(options: ReverseProxyOption) {
   const toUrl = new URL(toString.startsWith('http')
     ? toString
     : `${protocol}${toString}`)
+
+  debugLog('urls', `Normalized URLs - From: ${fromUrl}, To: ${toUrl}, Protocol: ${protocol}`)
 
   return {
     fromUrl,
