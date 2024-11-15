@@ -30,3 +30,5 @@ export interface ProxySetupOptions extends Omit<ReverseProxyOption, 'from'> {
   from: string
   to: string
 }
+
+export type { TlsConfig }
