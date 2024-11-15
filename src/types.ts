@@ -3,7 +3,7 @@ import type { TlsConfig } from '@stacksjs/tlsx'
 export interface ReverseProxyConfig {
   from: string // localhost:5173
   to: string // stacks.localhost
-  https: TlsConfig
+  https: boolean | TlsConfig
   verbose: boolean
 }
 

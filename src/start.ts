@@ -6,11 +6,13 @@ import * as fs from 'node:fs'
 import * as http from 'node:http'
 import * as https from 'node:https'
 import * as net from 'node:net'
+import os from 'node:os'
+import path from 'node:path'
 import process from 'node:process'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 import { config } from './config'
-import { generateCertificate } from './https'
+import { defaultHttpsConfig, generateCertificate } from './https'
 import { debugLog } from './utils'
 
 // Keep track of all running servers for cleanup
@@ -58,6 +60,28 @@ process.on('uncaughtException', (err) => {
  */
 async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | null> {
   debugLog('ssl', 'Loading SSL configuration', options.verbose)
+
+  if (options.https === true) {
+    options.https = {
+      domain: 'stacks.localhost',
+      hostCertCN: 'stacks.localhost',
+      caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
+      certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
+      keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
+      altNameIPs: ['127.0.0.1'],
+      altNameURIs: ['localhost'],
+      organizationName: 'stacksjs.org',
+      countryName: 'US',
+      stateName: 'California',
+      localityName: 'Playa Vista',
+      commonName: 'stacks.localhost',
+      validityDays: 180,
+      verbose: false,
+    }
+  }
+  else if (options.https === false) {
+    return null
+  }
 
   // Early return for non-SSL configuration
   if (!options.https?.keyPath && !options.https?.certPath) {
@@ -200,10 +224,16 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
 
   // Check if HTTPS is configured and set SSL paths
   if (config.https) {
+    if (config.https === true)
+      config.https = defaultHttpsConfig
+
     const domain = config.https.altNameURIs?.[0] || new URL(options.to).hostname
-    options.keyPath = config.https.keyPath || `/Users/${process.env.USER}/.stacks/ssl/${domain}.crt.key`
-    options.certPath = config.https.certPath || `/Users/${process.env.USER}/.stacks/ssl/${domain}.crt`
-    debugLog('server', `HTTPS enabled, using cert paths: ${options.keyPath}, ${options.certPath}`, options.verbose)
+
+    if (typeof options.https !== 'boolean' && options.https) {
+      options.https.keyPath = config.https.keyPath || path.join(os.homedir(), '.stacks', 'ssl', `${domain}.crt.key`)
+      options.https.certPath = config.https.certPath || path.join(os.homedir(), '.stacks', 'ssl', `${domain}.crt`)
+      debugLog('server', `HTTPS enabled, using cert paths: ${options.https.keyPath}, ${options.https.certPath}`, options.verbose)
+    }
   }
 
   const fromUrl = new URL(options.from.startsWith('http') ? options.from : `http://${options.from}`)
@@ -441,8 +471,7 @@ export function startProxy(options?: ReverseProxyOption): void {
   debugLog('proxy', `Starting proxy with options: ${JSON.stringify({
     from: finalOptions.from,
     to: finalOptions.to,
-    keyPath: finalOptions.https.keyPath,
-    certPath: finalOptions.https.certPath,
+    https: finalOptions.https,
   })}`, finalOptions.verbose)
 
   startServer(finalOptions).catch((err) => {
