@@ -1,4 +1,4 @@
-<p align="center"><img src="https://github.com/stacksjs/reverse-proxy/blob/main/.github/art/cover.jpg?raw=true" alt="Social Card of this repo"></p>
+<p align="center"><img src="https://github.com/stacksjs/rpx/blob/main/.github/art/cover.jpg?raw=true" alt="Social Card of this repo"></p>
 
 [![npm version][npm-version-src]][npm-version-href]
 [![GitHub Actions][github-actions-src]][github-actions-href]
@@ -12,9 +12,8 @@
 
 ## Features
 
-- Simple Reverse Proxy
+- Simple, lightweight Reverse Proxy
 - Custom Domains _(with wildcard support)_
-- Dependency-Free
 - Zero-Config Setup
 - SSL Support _(HTTPS by default)_
 - Auto HTTP-to-HTTPS Redirection
@@ -22,14 +21,14 @@
 ## Install
 
 ```bash
-bun install -d @stacksjs/reverse-proxy
+bun install -d @stacksjs/rpx
 ```
 
 <!-- _Alternatively, you can install:_
 
 ```bash
-brew install reverse-proxy # wip
-pkgx install reverse-proxy # wip
+brew install rpx # wip
+pkgx install rpx # wip
 ``` -->
 
 ## Get Started
@@ -41,7 +40,8 @@ There are two ways of using this reverse proxy: _as a library or as a CLI._
 Given the npm package is installed:
 
 ```ts
-import { startProxy } from '@stacksjs/reverse-proxy'
+import type { TlsConfig } from '@stacksjs/rpx'
+import { startProxy } from '@stacksjs/rpx'
 
 export interface ReverseProxyConfig {
   from: string // domain to proxy from, defaults to localhost:3000
@@ -154,10 +154,10 @@ The MIT License (MIT). Please see [LICENSE](https://github.com/stacksjs/stacks/t
 Made with 💙
 
 <!-- Badges -->
-[npm-version-src]: https://img.shields.io/npm/v/@stacksjs/reverse-proxy?style=flat-square
-[npm-version-href]: https://npmjs.com/package/@stacksjs/reverse-proxy
-[github-actions-src]: https://img.shields.io/github/actions/workflow/status/stacksjs/reverse-proxy/ci.yml?style=flat-square&branch=main
-[github-actions-href]: https://github.com/stacksjs/reverse-proxy/actions?query=workflow%3Aci
+[npm-version-src]: https://img.shields.io/npm/v/@stacksjs/rpx?style=flat-square
+[npm-version-href]: https://npmjs.com/package/@stacksjs/rpx
+[github-actions-src]: https://img.shields.io/github/actions/workflow/status/stacksjs/rpx/ci.yml?style=flat-square&branch=main
+[github-actions-href]: https://github.com/stacksjs/rpx/actions?query=workflow%3Aci
 
-<!-- [codecov-src]: https://img.shields.io/codecov/c/gh/stacksjs/reverse-proxy/main?style=flat-square
-[codecov-href]: https://codecov.io/gh/stacksjs/reverse-proxy -->
+<!-- [codecov-src]: https://img.shields.io/codecov/c/gh/stacksjs/rpx/main?style=flat-square
+[codecov-href]: https://codecov.io/gh/stacksjs/rpx -->
