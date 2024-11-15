@@ -1,6 +1,36 @@
 # Changelog
 
 
+## v0.1.0...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.1.0...main)
+
+### 🚀 Enhancements
+
+- Attach binaries ([a2453d1](https://github.com/stacksjs/rpx/commit/a2453d1))
+- Auto generate ssl certs ([7f50167](https://github.com/stacksjs/rpx/commit/7f50167))
+
+### 🏡 Chore
+
+- Adjust lint:fix ([bfb06a4](https://github.com/stacksjs/rpx/commit/bfb06a4))
+- Add stacks/biome-config ([553492b](https://github.com/stacksjs/rpx/commit/553492b))
+- Add test to handle whether port 80 is in use ([b0c494c](https://github.com/stacksjs/rpx/commit/b0c494c))
+- Adjust readme ([92e5fa2](https://github.com/stacksjs/rpx/commit/92e5fa2))
+- Adjust cover ([d1fcac8](https://github.com/stacksjs/rpx/commit/d1fcac8))
+- Adjust readme ([ecd9b5c](https://github.com/stacksjs/rpx/commit/ecd9b5c))
+- Wip ([2ab3250](https://github.com/stacksjs/rpx/commit/2ab3250))
+- Several improvements ([f33d379](https://github.com/stacksjs/rpx/commit/f33d379))
+- Housekeeping ([1cdf696](https://github.com/stacksjs/rpx/commit/1cdf696))
+- Core refactor ([8996c0c](https://github.com/stacksjs/rpx/commit/8996c0c))
+- Get https to work ([4782f43](https://github.com/stacksjs/rpx/commit/4782f43))
+- Resolve type errors ([4e30d5d](https://github.com/stacksjs/rpx/commit/4e30d5d))
+- Lint ([1529f60](https://github.com/stacksjs/rpx/commit/1529f60))
+- Adjust vscode settings ([c095ad1](https://github.com/stacksjs/rpx/commit/c095ad1))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.0.1...main
 
 [compare changes](https://github.com/stacksjs/reverse-proxy/compare/v0.0.1...main)
