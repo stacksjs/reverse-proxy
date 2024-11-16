@@ -46,18 +46,14 @@ import { startProxy } from '@stacksjs/rpx'
 export interface ReverseProxyConfig {
   from: string // domain to proxy from, defaults to localhost:3000
   to: string // domain to proxy to, defaults to stacks.localhost
-  https: TlsConfig // use https, defaults to true, also redirects http to https
+  https: boolean | TlsConfig // automatically uses https, defaults to true, also redirects http to https
   verbose: boolean // log verbose output, defaults to false
 }
 
 const config: ReverseProxyOptions = {
   from: 'localhost:3000',
   to: 'my-project.localhost',
-  https: {
-    keyPath: './key.pem',
-    certPath: './cert.pem',
-    caCertPath: './ca.pem',
-  },
+  https: true,
 }
 
 startProxy(config)
