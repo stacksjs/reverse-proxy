@@ -1,6 +1,24 @@
 # Changelog
 
 
+## v0.1.1...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.1.1...main)
+
+### 🚀 Enhancements
+
+- Allow for `https` boolean ([6153960](https://github.com/stacksjs/rpx/commit/6153960))
+
+### 🏡 Chore
+
+- Export cleanup ([5565a04](https://github.com/stacksjs/rpx/commit/5565a04))
+- Reset tests ([a758d40](https://github.com/stacksjs/rpx/commit/a758d40))
+- Update readme ([10bdade](https://github.com/stacksjs/rpx/commit/10bdade))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.1.0...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.1.0...main)
