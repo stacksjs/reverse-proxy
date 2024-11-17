@@ -61,7 +61,7 @@
     "preview:docs": "vitepress preview docs"
   },
   "dependencies": {
-    "@stacksjs/tlsx": "^0.5.6"
+    "@stacksjs/tlsx": "^0.6.0"
   },
   "devDependencies": {
     "@stacksjs/cli": "^0.68.2",
