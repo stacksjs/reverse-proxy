@@ -42,3 +42,4 @@ vitejs
 vitepress
 vue-demi
 vueus
+windir

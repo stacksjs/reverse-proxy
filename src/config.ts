@@ -25,6 +25,7 @@ export const config: ReverseProxyConfig = await loadConfig({
       validityDays: 180,
       verbose: false,
     },
+    etcHostsCleanup: false,
     verbose: true,
   },
 })

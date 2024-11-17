@@ -4,6 +4,7 @@ export interface ReverseProxyConfig {
   from: string // localhost:5173
   to: string // stacks.localhost
   https: boolean | TlsConfig
+  etcHostsCleanup: boolean
   verbose: boolean
 }
 

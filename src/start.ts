@@ -12,6 +12,7 @@ import process from 'node:process'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 import { config } from './config'
+import { addHosts, checkHosts, removeHosts } from './hosts'
 import { generateCertificate, httpsConfig } from './https'
 import { debugLog } from './utils'
 
@@ -21,12 +22,19 @@ const activeServers: Set<http.Server | https.Server> = new Set()
 /**
  * Cleanup function to close all servers and exit gracefully
  */
-export function cleanup(): void {
+/**
+ * Cleanup function to close all servers and cleanup hosts file if configured
+ */
+export async function cleanup(): Promise<void> {
   debugLog('cleanup', 'Starting cleanup process', config.verbose)
   console.log(`\n`)
   log.info('Shutting down proxy servers...')
 
-  const closePromises = Array.from(activeServers).map(server =>
+  // Create an array to store all cleanup promises
+  const cleanupPromises: Promise<void>[] = []
+
+  // Add server closing promises
+  const serverClosePromises = Array.from(activeServers).map(server =>
     new Promise<void>((resolve) => {
       server.close(() => {
         debugLog('cleanup', 'Server closed successfully', config.verbose)
@@ -34,16 +42,50 @@ export function cleanup(): void {
       })
     }),
   )
+  cleanupPromises.push(...serverClosePromises)
 
-  Promise.all(closePromises).then(() => {
-    debugLog('cleanup', 'All servers closed successfully', config.verbose)
-    log.success('All proxy servers shut down successfully')
+  // Add hosts file cleanup if configured
+  if (config.etcHostsCleanup) {
+    debugLog('cleanup', 'Cleaning up hosts file entries', config.verbose)
+
+    // Parse the URL to get the hostname
+    try {
+      const toUrl = new URL(config.to.startsWith('http') ? config.to : `http://${config.to}`)
+      const hostname = toUrl.hostname
+
+      // Only clean up if it's not localhost
+      if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
+        log.info('Cleaning up hosts file entries...')
+        cleanupPromises.push(
+          removeHosts([hostname])
+            .then(() => {
+              debugLog('cleanup', `Removed hosts entry for ${hostname}`, config.verbose)
+            })
+            .catch((err) => {
+              debugLog('cleanup', `Failed to remove hosts entry: ${err}`, config.verbose)
+              log.warn(`Failed to clean up hosts file entry for ${hostname}:`, err)
+              // Don't throw here to allow the rest of cleanup to continue
+            }),
+        )
+      }
+    }
+    catch (err) {
+      debugLog('cleanup', `Error parsing URL during hosts cleanup: ${err}`, config.verbose)
+      log.warn('Failed to parse URL for hosts cleanup:', err)
+    }
+  }
+
+  try {
+    await Promise.all(cleanupPromises)
+    debugLog('cleanup', 'All cleanup tasks completed successfully', config.verbose)
+    log.success('All cleanup tasks completed successfully')
     process.exit(0)
-  }).catch((err) => {
-    debugLog('cleanup', `Error during shutdown: ${err}`, config.verbose)
-    log.error('Error during shutdown:', err)
+  }
+  catch (err) {
+    debugLog('cleanup', `Error during cleanup: ${err}`, config.verbose)
+    log.error('Error during cleanup:', err)
     process.exit(1)
-  })
+  }
 }
 
 // Register cleanup handlers
@@ -205,12 +247,57 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
   if (!options.to)
     options.to = config.to
 
+  // Parse URLs early to get the hostnames
+  const fromUrl = new URL(options.from.startsWith('http') ? options.from : `http://${options.from}`)
+  const toUrl = new URL(options.to.startsWith('http') ? options.to : `http://${options.to}`)
+  const fromPort = Number.parseInt(fromUrl.port) || (fromUrl.protocol.includes('https:') ? 443 : 80)
+
+  // Check and update hosts file for custom domains
+  const hostsToCheck = [toUrl.hostname]
+  if (!toUrl.hostname.includes('localhost') && !toUrl.hostname.includes('127.0.0.1')) {
+    debugLog('hosts', `Checking if hosts file entry exists for: ${toUrl.hostname}`, options.verbose)
+
+    try {
+      const hostsExist = await checkHosts(hostsToCheck)
+      if (!hostsExist[0]) {
+        log.info(`Adding ${toUrl.hostname} to hosts file...`)
+        log.info('This may require sudo/administrator privileges')
+        try {
+          await addHosts(hostsToCheck)
+        }
+        catch (addError) {
+          log.error('Failed to add hosts entry:', (addError as Error).message)
+          log.warn('You can manually add this entry to your hosts file:')
+          log.warn(`127.0.0.1 ${toUrl.hostname}`)
+          log.warn(`::1 ${toUrl.hostname}`)
+
+          if (process.platform === 'win32') {
+            log.warn('On Windows:')
+            log.warn('1. Run notepad as administrator')
+            log.warn('2. Open C:\\Windows\\System32\\drivers\\etc\\hosts')
+          }
+          else {
+            log.warn('On Unix systems:')
+            log.warn('sudo nano /etc/hosts')
+          }
+        }
+      }
+      else {
+        debugLog('hosts', `Host entry already exists for ${toUrl.hostname}`, options.verbose)
+      }
+    }
+    catch (checkError) {
+      log.error('Failed to check hosts file:', (checkError as Error).message)
+      // Continue with proxy setup even if hosts check fails
+    }
+  }
+
   // Check if HTTPS is configured and set SSL paths
   if (config.https) {
     if (config.https === true)
       config.https = httpsConfig()
 
-    const domain = config.https.altNameURIs?.[0] || new URL(options.to).hostname
+    const domain = toUrl.hostname
 
     if (typeof options.https !== 'boolean' && options.https) {
       options.https.keyPath = config.https.keyPath || path.join(os.homedir(), '.stacks', 'ssl', `${domain}.crt.key`)
@@ -218,10 +305,6 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
       debugLog('server', `HTTPS enabled, using cert paths: ${options.https.keyPath}, ${options.https.certPath}`, options.verbose)
     }
   }
-
-  const fromUrl = new URL(options.from.startsWith('http') ? options.from : `http://${options.from}`)
-  const toUrl = new URL(options.to.startsWith('http') ? options.to : `http://${options.to}`)
-  const fromPort = Number.parseInt(fromUrl.port) || (fromUrl.protocol.includes('https:') ? 443 : 80)
 
   debugLog('server', `Parsed URLs - from: ${fromUrl}, to: ${toUrl}`, options.verbose)
 

@@ -1,3 +1,5 @@
 export { config } from './config'
+export * from './hosts'
+export * from './https'
 export * from './start'
 export * from './types'
