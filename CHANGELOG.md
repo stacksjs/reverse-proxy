@@ -1,6 +1,23 @@
 # Changelog
 
 
+## v0.2.0...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.2.0...main)
+
+### 🚀 Enhancements
+
+- /etc/hosts management ([53c930f](https://github.com/stacksjs/rpx/commit/53c930f))
+
+### 🏡 Chore
+
+- Update tlsx ([562613d](https://github.com/stacksjs/rpx/commit/562613d))
+- Improve httpsConfig handling ([5d62350](https://github.com/stacksjs/rpx/commit/5d62350))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.1.1...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.1.1...main)
