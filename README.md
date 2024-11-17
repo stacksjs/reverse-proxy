@@ -17,7 +17,7 @@
 - Zero-Config Setup
 - SSL Support _(HTTPS by default)_
 - Auto HTTP-to-HTTPS Redirection
-- /etc/hosts Auto-Update
+- Self `/etc/hosts` Management
 
 ## Install
 
