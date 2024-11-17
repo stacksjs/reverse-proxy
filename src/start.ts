@@ -12,7 +12,7 @@ import process from 'node:process'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 import { config } from './config'
-import { defaultHttpsConfig, generateCertificate } from './https'
+import { generateCertificate, httpsConfig } from './https'
 import { debugLog } from './utils'
 
 // Keep track of all running servers for cleanup
@@ -61,27 +61,10 @@ process.on('uncaughtException', (err) => {
 async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | null> {
   debugLog('ssl', 'Loading SSL configuration', options.verbose)
 
-  if (options.https === true) {
-    options.https = {
-      domain: 'stacks.localhost',
-      hostCertCN: 'stacks.localhost',
-      caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
-      certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
-      keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
-      altNameIPs: ['127.0.0.1'],
-      altNameURIs: ['localhost'],
-      organizationName: 'stacksjs.org',
-      countryName: 'US',
-      stateName: 'California',
-      localityName: 'Playa Vista',
-      commonName: 'stacks.localhost',
-      validityDays: 180,
-      verbose: false,
-    }
-  }
-  else if (options.https === false) {
+  if (options.https === true)
+    options.https = httpsConfig()
+  else if (options.https === false)
     return null
-  }
 
   // Early return for non-SSL configuration
   if (!options.https?.keyPath && !options.https?.certPath) {
@@ -114,7 +97,7 @@ async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | n
         debugLog('ssl', 'Certificates not found, generating new ones', options.verbose)
 
         // Use the domain from TlsConfig in config
-        await generateCertificate() // This will use config.https internally
+        await generateCertificate(options.to)
 
         // Try reading the newly generated certificates
         debugLog('ssl', 'Reading newly generated certificates', options.verbose)
@@ -225,7 +208,7 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
   // Check if HTTPS is configured and set SSL paths
   if (config.https) {
     if (config.https === true)
-      config.https = defaultHttpsConfig
+      config.https = httpsConfig()
 
     const domain = config.https.altNameURIs?.[0] || new URL(options.to).hostname
 
@@ -259,7 +242,7 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
     }
     catch (err) {
       debugLog('server', `SSL config failed, attempting to generate certificates: ${err}`, options.verbose)
-      await generateCertificate()
+      await generateCertificate(options.to)
       // Try loading again after generation
       sslConfig = await loadSSLConfig(options)
     }
