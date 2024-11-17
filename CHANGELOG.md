@@ -1,6 +1,19 @@
 # Changelog
 
 
+## v0.3.0...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.3.0...main)
+
+### 🏡 Chore
+
+- Adjust readme ([8fd4f68](https://github.com/stacksjs/rpx/commit/8fd4f68))
+- Some cleanup ([d8bf326](https://github.com/stacksjs/rpx/commit/d8bf326))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.2.0...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.2.0...main)
