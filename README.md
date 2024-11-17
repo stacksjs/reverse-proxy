@@ -48,6 +48,7 @@ export interface ReverseProxyConfig {
   from: string // domain to proxy from, defaults to localhost:3000
   to: string // domain to proxy to, defaults to stacks.localhost
   https: boolean | TlsConfig // automatically uses https, defaults to true, also redirects http to https
+  etcHostsCleanup?: boolean // automatically cleans up /etc/hosts, defaults to false
   verbose: boolean // log verbose output, defaults to false
 }
 
@@ -55,6 +56,7 @@ const config: ReverseProxyOptions = {
   from: 'localhost:3000',
   to: 'my-project.localhost',
   https: true,
+  etcHostsCleanup: true,
 }
 
 startProxy(config)

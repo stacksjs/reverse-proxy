@@ -15,7 +15,6 @@ export interface SSLConfig {
   key: string
   cert: string
   ca?: string | string[]
-  secureOptions?: number
 }
 
 export interface ProxySetupOptions extends Omit<ReverseProxyOption, 'from'> {
