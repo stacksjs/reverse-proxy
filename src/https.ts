@@ -1,67 +1,156 @@
-import type { TlsConfig } from '@stacksjs/tlsx'
+import type { ReverseProxyOption, ReverseProxyOptions, TlsConfig } from './types'
 import os from 'node:os'
 import path from 'node:path'
 import { log } from '@stacksjs/cli'
-import { addCertToSystemTrustStoreAndSaveCert, createRootCA, generateCert } from '@stacksjs/tlsx'
-import { config } from './config'
+import { addCertToSystemTrustStoreAndSaveCert, createRootCA, generateCertificate as generateCert } from '@stacksjs/tlsx'
+import { debugLog } from './utils'
 
-export function httpsConfig(): TlsConfig {
-  const domain = config.to || 'stacks.localhost'
-  const defaultConfig: TlsConfig = {
-    domain,
-    hostCertCN: domain,
-    caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `${domain}.ca.crt`),
-    certPath: path.join(os.homedir(), '.stacks', 'ssl', `${domain}.crt`),
-    keyPath: path.join(os.homedir(), '.stacks', 'ssl', `${domain}.crt.key`),
-    altNameIPs: ['127.0.0.1'],
-    altNameURIs: ['localhost'],
-    organizationName: 'stacksjs.org',
+let cachedSSLConfig: { key: string, cert: string, ca?: string } | null = null
+
+function extractDomains(options: ReverseProxyOptions): string[] {
+  if (Array.isArray(options)) {
+    return options.map((opt) => {
+      const domain = opt.to || 'stacks.localhost'
+      return domain.startsWith('http') ? new URL(domain).hostname : domain
+    })
+  }
+  const domain = options.to || 'stacks.localhost'
+  return [domain.startsWith('http') ? new URL(domain).hostname : domain]
+}
+
+// Generate wildcard patterns for a domain
+function generateWildcardPatterns(domain: string): string[] {
+  const patterns = new Set<string>()
+  patterns.add(domain) // Add exact domain
+
+  // Split domain into parts (e.g., "test.local" -> ["test", "local"])
+  const parts = domain.split('.')
+  if (parts.length >= 2) {
+    // Add wildcard for the domain (e.g., "*.local" for "test.local")
+    patterns.add(`*.${parts.slice(1).join('.')}`)
+  }
+
+  return Array.from(patterns)
+}
+
+function generateBaseConfig(domains: string[], verbose?: boolean): TlsConfig {
+  const sslBase = path.join(os.homedir(), '.stacks', 'ssl')
+
+  // Generate all possible SANs, including wildcards
+  const allPatterns = new Set<string>()
+  domains.forEach((domain) => {
+    // Add direct domain
+    allPatterns.add(domain)
+
+    // Add wildcard patterns
+    generateWildcardPatterns(domain).forEach(pattern => allPatterns.add(pattern))
+  })
+
+  // Add localhost patterns
+  allPatterns.add('localhost')
+  allPatterns.add('*.localhost')
+
+  const uniqueDomains = Array.from(allPatterns)
+  debugLog('ssl', `Generated domain patterns: ${uniqueDomains.join(', ')}`, verbose)
+
+  // Create a single object that contains all the config
+  const config: TlsConfig = {
+    domain: domains[0],
+    hostCertCN: domains[0],
+    caCertPath: path.join(sslBase, 'rpx-root-ca.crt'),
+    certPath: path.join(sslBase, 'rpx-certificate.crt'),
+    keyPath: path.join(sslBase, 'rpx-certificate.key'),
+    altNameIPs: ['127.0.0.1', '::1'],
+    // altNameURIs needs to be an empty array as we're using DNS names instead
+    altNameURIs: [],
+    // The real domains go in the commonName and subject alternative names
+    commonName: domains[0],
+    organizationName: 'RPX Local Development',
     countryName: 'US',
     stateName: 'California',
     localityName: 'Playa Vista',
-    commonName: domain,
-    validityDays: 180,
-    verbose: false,
+    validityDays: 825,
+    verbose: verbose ?? false,
+    // Add Subject Alternative Names as DNS names
+    subjectAltNames: uniqueDomains.map(domain => ({
+      type: 2, // DNS type
+      value: domain,
+    })),
   }
 
-  if (config.https === true)
-    return defaultConfig
+  return config
+}
+
+function generateRootCAConfig(): TlsConfig {
+  const sslBase = path.join(os.homedir(), '.stacks', 'ssl')
 
   return {
-    ...defaultConfig,
-    ...config.https,
+    domain: 'stacks.localhost',
+    hostCertCN: 'stacks.localhost',
+    caCertPath: path.join(sslBase, 'rpx-root-ca.crt'),
+    certPath: path.join(sslBase, 'rpx-certificate.crt'),
+    keyPath: path.join(sslBase, 'rpx-certificate.key'),
+    altNameIPs: ['127.0.0.1', '::1'],
+    altNameURIs: [],
+    organizationName: 'Stacks Local Development',
+    countryName: 'US',
+    stateName: 'California',
+    localityName: 'Playa Vista',
+    commonName: 'stacks.localhost',
+    validityDays: 3650,
+    verbose: true,
   }
 }
 
-export async function generateCertificate(domain?: string): Promise<void> {
-  if (config.https === true)
-    config.https = httpsConfig()
-  else if (config.https === false)
+export function httpsConfig(options: ReverseProxyOption | ReverseProxyOptions): TlsConfig {
+  const domains = extractDomains(options)
+  const verbose = Array.isArray(options) ? options[0]?.verbose : options.verbose
+
+  return generateBaseConfig(domains, verbose)
+}
+
+export async function generateCertificate(options: ReverseProxyOption | ReverseProxyOptions): Promise<void> {
+  if (cachedSSLConfig) {
+    debugLog('ssl', 'Using cached SSL configuration', Array.isArray(options) ? options[0]?.verbose : options.verbose)
     return
+  }
 
-  domain = domain ?? config.https.domain
+  const domains = extractDomains(options)
+  const verbose = Array.isArray(options) ? options[0]?.verbose : options.verbose
 
-  log.info(`Generating a self-signed SSL certificate for: ${domain}`)
+  debugLog('ssl', `Generating certificate for domains: ${domains.join(', ')}`, verbose)
 
-  const caCert = await createRootCA(config.https)
+  // Generate Root CA first
+  const rootCAConfig = generateRootCAConfig()
+  log.info('Generating Root CA certificate...')
+  const caCert = await createRootCA(rootCAConfig)
+
+  // Generate the host certificate with all domains
+  const hostConfig = generateBaseConfig(domains, verbose)
+  log.info(`Generating host certificate for: ${domains.join(', ')}`)
+
   const hostCert = await generateCert({
-    hostCertCN: config.https.commonName ?? domain,
-    domain,
-    altNameIPs: config.https.altNameIPs,
-    altNameURIs: config.https.altNameURIs,
-    countryName: config.https.countryName,
-    stateName: config.https.stateName,
-    localityName: config.https.localityName,
-    organizationName: config.https.organizationName,
-    validityDays: config.https.validityDays,
+    ...hostConfig,
     rootCAObject: {
       certificate: caCert.certificate,
       privateKey: caCert.privateKey,
     },
-    verbose: config.https.verbose || config.verbose,
   })
 
-  await addCertToSystemTrustStoreAndSaveCert(hostCert, caCert.certificate, config.https)
+  // Add to system trust store with all necessary options
+  await addCertToSystemTrustStoreAndSaveCert(hostCert, caCert.certificate, hostConfig)
 
-  log.success('Certificate generated')
+  // Cache the SSL config for reuse
+  cachedSSLConfig = {
+    key: hostCert.privateKey,
+    cert: hostCert.certificate,
+    ca: caCert.certificate,
+  }
+
+  log.success(`Certificate generated successfully for ${domains.length} domain${domains.length > 1 ? 's' : ''}`)
+  debugLog('ssl', `Certificate includes domains: ${domains.join(', ')}`, verbose)
+}
+
+export function getSSLConfig(): { key: string, cert: string, ca?: string } | null {
+  return cachedSSLConfig
 }

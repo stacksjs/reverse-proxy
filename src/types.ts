@@ -6,8 +6,10 @@ export interface ReverseProxyConfig {
   https: boolean | TlsConfig
   etcHostsCleanup: boolean
   verbose: boolean
+  _cachedSSLConfig?: SSLConfig | null // Add this line
 }
 
+export type ReverseProxyConfigs = ReverseProxyConfig | ReverseProxyConfig[]
 export type ReverseProxyOption = Partial<ReverseProxyConfig>
 export type ReverseProxyOptions = ReverseProxyOption | ReverseProxyOption[]
 
@@ -23,6 +25,20 @@ export interface ProxySetupOptions extends Omit<ReverseProxyOption, 'from'> {
   ssl: SSLConfig | null
   from: string
   to: string
+}
+
+export interface PortManager {
+  usedPorts: Set<number>
+  getNextAvailablePort: (startPort: number) => Promise<number>
+}
+
+export interface ProxySetupOptions extends Omit<ReverseProxyOption, 'from'> {
+  fromPort: number
+  sourceUrl: Pick<URL, 'hostname' | 'host'>
+  ssl: SSLConfig | null
+  from: string
+  to: string
+  portManager?: PortManager
 }
 
 export type { TlsConfig }

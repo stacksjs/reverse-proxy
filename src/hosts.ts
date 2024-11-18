@@ -4,7 +4,6 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { log } from '@stacksjs/cli'
-import { config } from './config'
 import { debugLog } from './utils'
 
 export const hostsFilePath: string = process.platform === 'win32'
@@ -60,9 +59,9 @@ async function sudoWrite(operation: 'append' | 'write', content: string): Promis
   })
 }
 
-export async function addHosts(hosts: string[]): Promise<void> {
-  debugLog('hosts', `Adding hosts: ${hosts.join(', ')}`, config.verbose)
-  debugLog('hosts', `Using hosts file at: ${hostsFilePath}`, config.verbose)
+export async function addHosts(hosts: string[], verbose?: boolean): Promise<void> {
+  debugLog('hosts', `Adding hosts: ${hosts.join(', ')}`, verbose)
+  debugLog('hosts', `Using hosts file at: ${hostsFilePath}`, verbose)
 
   try {
     // Read existing hosts file content
@@ -76,7 +75,7 @@ export async function addHosts(hosts: string[]): Promise<void> {
     })
 
     if (newEntries.length === 0) {
-      debugLog('hosts', 'All hosts already exist in hosts file', config.verbose)
+      debugLog('hosts', 'All hosts already exist in hosts file', verbose)
       log.info('All hosts are already in the hosts file')
       return
     }
@@ -93,7 +92,7 @@ export async function addHosts(hosts: string[]): Promise<void> {
     }
     catch (writeErr) {
       if ((writeErr as NodeJS.ErrnoException).code === 'EACCES') {
-        debugLog('hosts', 'Permission denied, attempting with sudo', config.verbose)
+        debugLog('hosts', 'Permission denied, attempting with sudo', verbose)
         try {
           await sudoWrite('append', hostEntries)
           log.success(`Added new hosts with sudo: ${newEntries.join(', ')}`)
@@ -129,8 +128,8 @@ export async function addHosts(hosts: string[]): Promise<void> {
   }
 }
 
-export async function removeHosts(hosts: string[]): Promise<void> {
-  debugLog('hosts', `Removing hosts: ${hosts.join(', ')}`, config.verbose)
+export async function removeHosts(hosts: string[], verbose?: boolean): Promise<void> {
+  debugLog('hosts', `Removing hosts: ${hosts.join(', ')}`, verbose)
 
   try {
     const content = await fs.promises.readFile(hostsFilePath, 'utf-8')
@@ -160,7 +159,7 @@ export async function removeHosts(hosts: string[]): Promise<void> {
     }
     catch (writeErr) {
       if ((writeErr as NodeJS.ErrnoException).code === 'EACCES') {
-        debugLog('hosts', 'Permission denied, attempting with sudo', config.verbose)
+        debugLog('hosts', 'Permission denied, attempting with sudo', verbose)
         try {
           await sudoWrite('write', newContent)
           log.success('Hosts removed successfully with sudo')
@@ -201,8 +200,8 @@ export async function removeHosts(hosts: string[]): Promise<void> {
 }
 
 // Helper function to check if hosts exist
-export async function checkHosts(hosts: string[]): Promise<boolean[]> {
-  debugLog('hosts', `Checking hosts: ${hosts}`, config.verbose)
+export async function checkHosts(hosts: string[], verbose?: boolean): Promise<boolean[]> {
+  debugLog('hosts', `Checking hosts: ${hosts}`, verbose)
 
   const content = await fs.promises.readFile(hostsFilePath, 'utf-8')
   return hosts.map((host) => {

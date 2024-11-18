@@ -1,10 +1,10 @@
-import type { ReverseProxyConfig } from './types'
+import type { ReverseProxyConfigs } from './types'
 import os from 'node:os'
 import path from 'node:path'
 import { loadConfig } from 'bun-config'
 
 // eslint-disable-next-line antfu/no-top-level-await
-export const config: ReverseProxyConfig = await loadConfig({
+export const config: ReverseProxyConfigs = await loadConfig({
   name: 'reverse-proxy',
   defaultConfig: {
     from: 'localhost:5173',
@@ -25,7 +25,7 @@ export const config: ReverseProxyConfig = await loadConfig({
       validityDays: 180,
       verbose: false,
     },
-    etcHostsCleanup: false,
+    etcHostsCleanup: true,
     verbose: true,
   },
 })

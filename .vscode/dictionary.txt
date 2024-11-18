@@ -15,9 +15,12 @@ deps
 destructurable
 dtsx
 entrypoints
+findstr
 heroicons
+HSTS
 lockb
 mkcert
+nosniff
 openweb
 outdir
 outfile

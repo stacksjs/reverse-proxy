@@ -1,32 +1,32 @@
 /* eslint-disable no-console */
 import type { SecureServerOptions } from 'node:http2'
 import type { ServerOptions } from 'node:https'
-import type { ProxySetupOptions, ReverseProxyOption, ReverseProxyOptions, SSLConfig } from './types'
+import type { ProxySetupOptions, ReverseProxyConfig, ReverseProxyOption, ReverseProxyOptions, SSLConfig } from './types'
 import * as fs from 'node:fs'
 import * as http from 'node:http'
 import * as https from 'node:https'
 import * as net from 'node:net'
-import os from 'node:os'
-import path from 'node:path'
 import process from 'node:process'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
-import { config } from './config'
 import { addHosts, checkHosts, removeHosts } from './hosts'
-import { generateCertificate, httpsConfig } from './https'
+import { generateCertificate, getSSLConfig, httpsConfig } from './https'
 import { debugLog } from './utils'
 
 // Keep track of all running servers for cleanup
 const activeServers: Set<http.Server | https.Server> = new Set()
 
-/**
- * Cleanup function to close all servers and exit gracefully
- */
+interface CleanupOptions {
+  domain?: string
+  etcHostsCleanup?: boolean
+  verbose?: boolean
+}
+
 /**
  * Cleanup function to close all servers and cleanup hosts file if configured
  */
-export async function cleanup(): Promise<void> {
-  debugLog('cleanup', 'Starting cleanup process', config.verbose)
+export async function cleanup(options?: CleanupOptions): Promise<void> {
+  debugLog('cleanup', 'Starting cleanup process', options?.verbose)
   console.log(`\n`)
   log.info('Shutting down proxy servers...')
 
@@ -37,7 +37,7 @@ export async function cleanup(): Promise<void> {
   const serverClosePromises = Array.from(activeServers).map(server =>
     new Promise<void>((resolve) => {
       server.close(() => {
-        debugLog('cleanup', 'Server closed successfully', config.verbose)
+        debugLog('cleanup', 'Server closed successfully', options?.verbose)
         resolve()
       })
     }),
@@ -45,24 +45,25 @@ export async function cleanup(): Promise<void> {
   cleanupPromises.push(...serverClosePromises)
 
   // Add hosts file cleanup if configured
-  if (config.etcHostsCleanup) {
-    debugLog('cleanup', 'Cleaning up hosts file entries', config.verbose)
+  if (options?.etcHostsCleanup) {
+    debugLog('cleanup', 'Cleaning up hosts file entries', options?.verbose)
 
     // Parse the URL to get the hostname
     try {
-      const toUrl = new URL(config.to.startsWith('http') ? config.to : `http://${config.to}`)
+      const domain = options.domain || 'stacks.localhost'
+      const toUrl = new URL(domain.startsWith('http') ? domain : `http://${domain}`)
       const hostname = toUrl.hostname
 
       // Only clean up if it's not localhost
       if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
         log.info('Cleaning up hosts file entries...')
         cleanupPromises.push(
-          removeHosts([hostname])
+          removeHosts([hostname], options?.verbose)
             .then(() => {
-              debugLog('cleanup', `Removed hosts entry for ${hostname}`, config.verbose)
+              debugLog('cleanup', `Removed hosts entry for ${hostname}`, options?.verbose)
             })
             .catch((err) => {
-              debugLog('cleanup', `Failed to remove hosts entry: ${err}`, config.verbose)
+              debugLog('cleanup', `Failed to remove hosts entry: ${err}`, options?.verbose)
               log.warn(`Failed to clean up hosts file entry for ${hostname}:`, err)
               // Don't throw here to allow the rest of cleanup to continue
             }),
@@ -70,19 +71,19 @@ export async function cleanup(): Promise<void> {
       }
     }
     catch (err) {
-      debugLog('cleanup', `Error parsing URL during hosts cleanup: ${err}`, config.verbose)
+      debugLog('cleanup', `Error parsing URL during hosts cleanup: ${err}`, options?.verbose)
       log.warn('Failed to parse URL for hosts cleanup:', err)
     }
   }
 
   try {
     await Promise.all(cleanupPromises)
-    debugLog('cleanup', 'All cleanup tasks completed successfully', config.verbose)
+    debugLog('cleanup', 'All cleanup tasks completed successfully', options?.verbose)
     log.success('All cleanup tasks completed successfully')
     process.exit(0)
   }
   catch (err) {
-    debugLog('cleanup', `Error during cleanup: ${err}`, config.verbose)
+    debugLog('cleanup', `Error during cleanup: ${err}`, options?.verbose)
     log.error('Error during cleanup:', err)
     process.exit(1)
   }
@@ -92,7 +93,7 @@ export async function cleanup(): Promise<void> {
 process.on('SIGINT', cleanup)
 process.on('SIGTERM', cleanup)
 process.on('uncaughtException', (err) => {
-  debugLog('process', `Uncaught exception: ${err}`, config.verbose)
+  debugLog('process', `Uncaught exception: ${err}`, true)
   log.error('Uncaught exception:', err)
   cleanup()
 })
@@ -101,10 +102,10 @@ process.on('uncaughtException', (err) => {
  * Load SSL certificates from files or use provided strings
  */
 async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | null> {
-  debugLog('ssl', 'Loading SSL configuration', options.verbose)
+  debugLog('ssl', `Loading SSL configuration`, options.verbose)
 
   if (options.https === true)
-    options.https = httpsConfig()
+    options.https = httpsConfig(options)
   else if (options.https === false)
     return null
 
@@ -134,34 +135,13 @@ async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | n
       return { key, cert }
     }
     catch (error) {
-      // If files don't exist, generate new certificates
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        debugLog('ssl', 'Certificates not found, generating new ones', options.verbose)
-
-        // Use the domain from TlsConfig in config
-        await generateCertificate(options.to)
-
-        // Try reading the newly generated certificates
-        debugLog('ssl', 'Reading newly generated certificates', options.verbose)
-        const key = await fs.promises.readFile(options.https?.keyPath, 'utf8')
-        const cert = await fs.promises.readFile(options.https?.certPath, 'utf8')
-
-        debugLog('ssl', 'New SSL certificates loaded successfully', options.verbose)
-        return { key, cert }
-      }
-
-      // If error is not about missing files, rethrow
-      throw error
+      debugLog('ssl', `Failed to read certificates: ${error}`, options.verbose)
+      return null
     }
   }
   catch (err) {
-    const error = err as NodeJS.ErrnoException
-    const detail = error.code === 'ENOENT'
-      ? `File not found: ${error.path}`
-      : error.message
-
-    debugLog('ssl', `SSL configuration error: ${error}`, options.verbose)
-    throw new Error(`SSL Configuration Error: ${detail}`)
+    debugLog('ssl', `SSL configuration error: ${err}`, options.verbose)
+    throw err
   }
 }
 
@@ -236,16 +216,8 @@ async function testConnection(hostname: string, port: number, verbose?: boolean)
   })
 }
 
-export async function startServer(options?: ReverseProxyOption): Promise<void> {
-  debugLog('server', `Starting server with options: ${JSON.stringify(options)}`, options?.verbose)
-
-  if (!options)
-    options = config
-
-  if (!options.from)
-    options.from = config.from
-  if (!options.to)
-    options.to = config.to
+export async function startServer(options: ReverseProxyConfig): Promise<void> {
+  debugLog('server', `Starting server with options: ${JSON.stringify(options)}`, options.verbose)
 
   // Parse URLs early to get the hostnames
   const fromUrl = new URL(options.from.startsWith('http') ? options.from : `http://${options.from}`)
@@ -255,15 +227,15 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
   // Check and update hosts file for custom domains
   const hostsToCheck = [toUrl.hostname]
   if (!toUrl.hostname.includes('localhost') && !toUrl.hostname.includes('127.0.0.1')) {
-    debugLog('hosts', `Checking if hosts file entry exists for: ${toUrl.hostname}`, options.verbose)
+    debugLog('hosts', `Checking if hosts file entry exists for: ${toUrl.hostname}`, options?.verbose)
 
     try {
-      const hostsExist = await checkHosts(hostsToCheck)
+      const hostsExist = await checkHosts(hostsToCheck, options.verbose)
       if (!hostsExist[0]) {
         log.info(`Adding ${toUrl.hostname} to hosts file...`)
         log.info('This may require sudo/administrator privileges')
         try {
-          await addHosts(hostsToCheck)
+          await addHosts(hostsToCheck, options.verbose)
         }
         catch (addError) {
           log.error('Failed to add hosts entry:', (addError as Error).message)
@@ -292,22 +264,6 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
     }
   }
 
-  // Check if HTTPS is configured and set SSL paths
-  if (config.https) {
-    if (config.https === true)
-      config.https = httpsConfig()
-
-    const domain = toUrl.hostname
-
-    if (typeof options.https !== 'boolean' && options.https) {
-      options.https.keyPath = config.https.keyPath || path.join(os.homedir(), '.stacks', 'ssl', `${domain}.crt.key`)
-      options.https.certPath = config.https.certPath || path.join(os.homedir(), '.stacks', 'ssl', `${domain}.crt`)
-      debugLog('server', `HTTPS enabled, using cert paths: ${options.https.keyPath}, ${options.https.certPath}`, options.verbose)
-    }
-  }
-
-  debugLog('server', `Parsed URLs - from: ${fromUrl}, to: ${toUrl}`, options.verbose)
-
   // Test connection to source server before proceeding
   try {
     await testConnection(fromUrl.hostname, fromPort, options.verbose)
@@ -318,18 +274,59 @@ export async function startServer(options?: ReverseProxyOption): Promise<void> {
     process.exit(1)
   }
 
-  let sslConfig = null
-  if (config.https) {
+  let sslConfig = options._cachedSSLConfig || null
+
+  if (options.https) {
     try {
-      sslConfig = await loadSSLConfig(options)
+      if (options.https === true) {
+        options.https = httpsConfig({
+          ...options,
+          to: toUrl.hostname,
+        })
+      }
+
+      // Try to load existing certificates
+      try {
+        debugLog('ssl', `Attempting to load SSL configuration for ${toUrl.hostname}`, options.verbose)
+        sslConfig = await loadSSLConfig({
+          ...options,
+          to: toUrl.hostname,
+          https: options.https,
+        })
+      }
+      catch (loadError) {
+        debugLog('ssl', `Failed to load certificates, will generate new ones: ${loadError}`, options.verbose)
+      }
+
+      // Generate new certificates if loading failed or returned null
+      if (!sslConfig) {
+        debugLog('ssl', `Generating new certificates for ${toUrl.hostname}`, options.verbose)
+        await generateCertificate({
+          ...options,
+          from: fromUrl.toString(),
+          to: toUrl.hostname,
+          https: options.https,
+        })
+
+        // Try loading again after generation
+        sslConfig = await loadSSLConfig({
+          ...options,
+          to: toUrl.hostname,
+          https: options.https,
+        })
+
+        if (!sslConfig) {
+          throw new Error(`Failed to load SSL configuration after generating certificates for ${toUrl.hostname}`)
+        }
+      }
     }
     catch (err) {
-      debugLog('server', `SSL config failed, attempting to generate certificates: ${err}`, options.verbose)
-      await generateCertificate(options.to)
-      // Try loading again after generation
-      sslConfig = await loadSSLConfig(options)
+      debugLog('server', `SSL setup failed: ${err}`, options.verbose)
+      throw err
     }
   }
+
+  debugLog('server', `Setting up reverse proxy with SSL config for ${toUrl.hostname}`, options.verbose)
 
   await setupReverseProxy({
     ...options,
@@ -470,17 +467,19 @@ async function createProxyServer(
 export async function setupReverseProxy(options: ProxySetupOptions): Promise<void> {
   debugLog('setup', `Setting up reverse proxy: ${JSON.stringify(options)}`, options.verbose)
 
-  const { from, to, fromPort, sourceUrl, ssl, verbose } = options
+  const { from, to, fromPort, sourceUrl, ssl, verbose, etcHostsCleanup, portManager } = options
   const httpPort = 80
   const httpsPort = 443
   const hostname = '0.0.0.0'
 
   try {
-    if (ssl) {
+    // Handle HTTP redirect server only for the first proxy
+    if (ssl && !portManager?.usedPorts.has(httpPort)) {
       const isHttpPortBusy = await isPortInUse(httpPort, hostname, verbose)
       if (!isHttpPortBusy) {
         debugLog('setup', 'Starting HTTP redirect server', verbose)
         startHttpRedirectServer(verbose)
+        portManager?.usedPorts.add(httpPort)
       }
       else {
         debugLog('setup', 'Port 80 is in use, skipping HTTP redirect', verbose)
@@ -489,25 +488,33 @@ export async function setupReverseProxy(options: ProxySetupOptions): Promise<voi
     }
 
     const targetPort = ssl ? httpsPort : httpPort
-    const isTargetPortBusy = await isPortInUse(targetPort, hostname, verbose)
+    let finalPort: number
 
-    if (isTargetPortBusy) {
-      debugLog('setup', `Port ${targetPort} is busy, finding alternative`, verbose)
-      const availablePort = await findAvailablePort(ssl ? 8443 : 8080, hostname, verbose)
-      log.warn(`Port ${targetPort} is in use. Using port ${availablePort} instead.`)
-      log.info(`You can use 'sudo lsof -i :${targetPort}' (Unix) or 'netstat -ano | findstr :${targetPort}' (Windows) to check what's using the port.`)
-
-      await createProxyServer(from, to, fromPort, availablePort, hostname, sourceUrl, ssl, verbose)
+    if (portManager) {
+      finalPort = await portManager.getNextAvailablePort(targetPort)
     }
     else {
-      debugLog('setup', `Using default port ${targetPort}`, verbose)
-      await createProxyServer(from, to, fromPort, targetPort, hostname, sourceUrl, ssl, verbose)
+      const isTargetPortBusy = await isPortInUse(targetPort, hostname, verbose)
+      finalPort = isTargetPortBusy
+        ? await findAvailablePort(ssl ? 8443 : 8080, hostname, verbose)
+        : targetPort
     }
+
+    if (finalPort !== targetPort) {
+      log.warn(`Port ${targetPort} is in use. Using port ${finalPort} instead.`)
+      log.info(`You can use 'sudo lsof -i :${targetPort}' (Unix) or 'netstat -ano | findstr :${targetPort}' (Windows) to check what's using the port.`)
+    }
+
+    await createProxyServer(from, to, fromPort, finalPort, hostname, sourceUrl, ssl, verbose)
   }
   catch (err) {
     debugLog('setup', `Setup failed: ${err}`, verbose)
     log.error(`Failed to setup reverse proxy: ${(err as Error).message}`)
-    cleanup()
+    cleanup({
+      domain: to,
+      etcHostsCleanup,
+      verbose,
+    })
   }
 }
 
@@ -528,41 +535,69 @@ export function startHttpRedirectServer(verbose?: boolean): void {
   debugLog('redirect', 'HTTP redirect server started', verbose)
 }
 
-export function startProxy(options?: ReverseProxyOption): void {
-  const finalOptions = {
-    ...config,
-    ...options,
+export function startProxy(options: ReverseProxyOption): void {
+  debugLog('proxy', `Starting proxy with options: ${JSON.stringify(options)}`, options?.verbose)
+
+  const serverOptions: ReverseProxyConfig = {
+    from: options?.from || 'localhost:5173',
+    to: options?.to || 'stacks.localhost',
+    https: httpsConfig(options),
+    etcHostsCleanup: options?.etcHostsCleanup || false,
+    verbose: options?.verbose || false,
   }
 
-  debugLog('proxy', `Starting proxy with options: ${JSON.stringify({
-    from: finalOptions.from,
-    to: finalOptions.to,
-    https: finalOptions.https,
-  })}`, finalOptions.verbose)
+  console.log('serverOptions', serverOptions)
 
-  startServer(finalOptions).catch((err) => {
-    debugLog('proxy', `Failed to start proxy: ${err}`, finalOptions.verbose)
+  startServer(serverOptions).catch((err) => {
+    debugLog('proxy', `Failed to start proxy: ${err}`, options.verbose)
     log.error(`Failed to start proxy: ${err.message}`)
-    cleanup()
+    cleanup({
+      domain: options.to,
+      etcHostsCleanup: options.etcHostsCleanup,
+      verbose: options.verbose,
+    })
   })
 }
 
-export function startProxies(options?: ReverseProxyOptions): void {
-  if (Array.isArray(options)) {
-    debugLog('proxies', `Starting multiple proxies: ${options.length}`, options[0]?.verbose)
-    Promise.all(options.map(option => startServer(option)))
-      .catch((err) => {
-        debugLog('proxies', `Failed to start proxies: ${err}`, options[0]?.verbose)
-        log.error('Failed to start proxies:', err)
-        cleanup()
-      })
+export async function startProxies(options?: ReverseProxyOptions): Promise<void> {
+  if (!options)
+    return
+
+  debugLog('proxies', `Starting proxies setup`, Array.isArray(options) ? options[0]?.verbose : options.verbose)
+
+  // Convert single option to array for consistent handling
+  const proxyOptions = Array.isArray(options) ? options : [options]
+
+  // Generate certificate once for all domains
+  if (proxyOptions.some(opt => opt.https)) {
+    await generateCertificate(proxyOptions)
   }
-  else if (options) {
-    debugLog('proxies', 'Starting single proxy', options.verbose)
-    startServer(options).catch((err) => {
-      debugLog('proxies', `Failed to start proxy: ${err}`, options.verbose)
-      log.error('Failed to start proxy:', err)
-      cleanup()
-    })
+
+  // Now start all proxies with the cached SSL config
+  for (const option of proxyOptions) {
+    try {
+      const domain = option.to || 'stacks.localhost'
+      const sslConfig = option.https ? getSSLConfig() : null
+
+      debugLog('proxy', `Starting proxy for ${domain} with SSL config: ${!!sslConfig}`, option.verbose)
+
+      await startServer({
+        from: option.from || 'localhost:5173',
+        to: domain,
+        https: option.https ?? false, // Ensure https is always boolean or TlsConfig
+        etcHostsCleanup: option.etcHostsCleanup || false,
+        verbose: option.verbose || false,
+        _cachedSSLConfig: sslConfig,
+      })
+    }
+    catch (err) {
+      debugLog('proxies', `Failed to start proxy for ${option.to}: ${err}`, option.verbose)
+      log.error(`Failed to start proxy for ${option.to}:`, err)
+      cleanup({
+        domain: option.to,
+        etcHostsCleanup: option.etcHostsCleanup,
+        verbose: option.verbose,
+      })
+    }
   }
 }

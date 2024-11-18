@@ -61,14 +61,14 @@
     "preview:docs": "vitepress preview docs"
   },
   "dependencies": {
-    "@stacksjs/tlsx": "^0.6.0"
+    "@stacksjs/tlsx": "^0.7.5"
   },
   "devDependencies": {
     "@stacksjs/cli": "^0.68.2",
     "@stacksjs/eslint-config": "^3.8.1-beta.2",
     "@stacksjs/storage": "^0.68.2",
     "@types/bun": "^1.1.13",
-    "bun-config": "^0.2.0",
+    "bun-config": "^0.3.2",
     "bun-plugin-dtsx": "^0.21.8",
     "typescript": "^5.6.3",
     "vitepress": "^1.5.0"
