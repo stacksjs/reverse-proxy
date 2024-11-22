@@ -1,6 +1,27 @@
 # Changelog
 
 
+## v0.3.1...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.3.1...main)
+
+### 🚀 Enhancements
+
+- Ensure multiple proxies work ([7420091](https://github.com/stacksjs/rpx/commit/7420091))
+
+### 🩹 Fixes
+
+- Ensure /etc/hosts is cleaned if configured ([501027c](https://github.com/stacksjs/rpx/commit/501027c))
+
+### 🏡 Chore
+
+- Several updates ([b519c5b](https://github.com/stacksjs/rpx/commit/b519c5b))
+- Lint ([c47d212](https://github.com/stacksjs/rpx/commit/c47d212))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.3.0...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.3.0...main)
