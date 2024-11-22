@@ -65,10 +65,10 @@ startProxy(config)
 ### CLI
 
 ```bash
-reverse-proxy --from localhost:3000 --to my-project.localhost
-reverse-proxy --from localhost:8080 --to my-project.test --keyPath ./key.pem --certPath ./cert.pem
-reverse-proxy --help
-reverse-proxy --version
+rpx --from localhost:3000 --to my-project.localhost
+rpx --from localhost:8080 --to my-project.test --keyPath ./key.pem --certPath ./cert.pem
+rpx --help
+rpx --version
 ```
 
 ## Configuration
@@ -77,7 +77,7 @@ The Reverse Proxy can be configured using a `reverse-proxy.config.ts` _(or `reve
 
 ```ts
 // reverse-proxy.config.{ts,js}
-import type { ReverseProxyOptions } from './src/types'
+import type { ReverseProxyOptions } from '@stacksjs/rpx'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -101,6 +101,40 @@ const config: ReverseProxyOptions = {
     verbose: false,
   },
   verbose: false,
+}
+
+export default config
+```
+
+In case you are trying to start multiple proxies, you may use this configuration:
+
+```ts
+// reverse-proxy.config.{ts,js}
+import type { ReverseProxyOptions } from '@stacksjs/rpx'
+import os from 'node:os'
+import path from 'node:path'
+
+const config: ReverseProxyOptions = {
+  https: { // https: true -> also works with sensible defaults
+    caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
+    certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
+    keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
+  },
+
+  etcHostsCleanup: true,
+
+  proxies: [
+    {
+      from: 'localhost:5173',
+      to: 'my-app.localhost',
+    },
+    {
+      from: 'localhost:5174',
+      to: 'my-api.local',
+    },
+  ],
+
+  verbose: true,
 }
 
 export default config

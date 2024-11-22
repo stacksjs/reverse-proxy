@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import type { SecureServerOptions } from 'node:http2'
 import type { ServerOptions } from 'node:https'
-import type { ProxySetupOptions, ReverseProxyConfig, ReverseProxyOption, ReverseProxyOptions, SSLConfig } from './types'
+import type { BaseReverseProxyConfig, MultiReverseProxyConfig, ProxySetupOptions, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
 import * as fs from 'node:fs'
 import * as http from 'node:http'
 import * as https from 'node:https'
@@ -216,7 +216,7 @@ async function testConnection(hostname: string, port: number, verbose?: boolean)
   })
 }
 
-export async function startServer(options: ReverseProxyConfig): Promise<void> {
+export async function startServer(options: SingleReverseProxyConfig): Promise<void> {
   debugLog('server', `Starting server with options: ${JSON.stringify(options)}`, options.verbose)
 
   // Parse URLs early to get the hostnames
@@ -538,7 +538,7 @@ export function startHttpRedirectServer(verbose?: boolean): void {
 export function startProxy(options: ReverseProxyOption): void {
   debugLog('proxy', `Starting proxy with options: ${JSON.stringify(options)}`, options?.verbose)
 
-  const serverOptions: ReverseProxyConfig = {
+  const serverOptions: SingleReverseProxyConfig = {
     from: options?.from || 'localhost:5173',
     to: options?.to || 'stacks.localhost',
     https: httpsConfig(options),
@@ -563,15 +563,24 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
   if (!options)
     return
 
-  debugLog('proxies', `Starting proxies setup`, Array.isArray(options) ? options[0]?.verbose : options.verbose)
+  debugLog('proxies', 'Starting proxies setup', isMultiProxyConfig(options) ? options.verbose : options.verbose)
 
-  // Convert single option to array for consistent handling
-  const proxyOptions = Array.isArray(options) ? options : [options]
+  console.log('options', options)
 
-  // Generate certificate once for all domains
-  if (proxyOptions.some(opt => opt.https)) {
-    await generateCertificate(proxyOptions)
+  if (options.https) {
+    await generateCertificate(options as ReverseProxyConfigs)
   }
+
+  // Convert configurations to a flat array of proxy configs
+  const proxyOptions = isMultiProxyConfig(options)
+    ? options.proxies.map(proxy => ({
+      ...proxy,
+      https: options.https,
+      etcHostsCleanup: options.etcHostsCleanup,
+      verbose: options.verbose,
+      _cachedSSLConfig: options._cachedSSLConfig,
+    }))
+    : [options]
 
   // Now start all proxies with the cached SSL config
   for (const option of proxyOptions) {
@@ -600,4 +609,8 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
       })
     }
   }
+}
+
+function isMultiProxyConfig(options: ReverseProxyConfigs): options is MultiReverseProxyConfig {
+  return 'proxies' in options
 }

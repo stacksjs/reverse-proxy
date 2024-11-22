@@ -1,37 +1,28 @@
 import type { ReverseProxyOptions } from './src/types'
+import os from 'node:os'
+import path from 'node:path'
 
-const config: ReverseProxyOptions = [
-  {
-    from: 'localhost:5173',
-    to: 'test.localhost',
-    https: true,
-    // https: {
-    //   domain: 'stacks.localhost',
-    //   hostCertCN: 'stacks.localhost',
-    //   caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
-    //   certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
-    //   keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
-    //   altNameIPs: ['127.0.0.1'],
-    //   altNameURIs: ['localhost'],
-    //   organizationName: 'stacksjs.org',
-    //   countryName: 'US',
-    //   stateName: 'California',
-    //   localityName: 'Playa Vista',
-    //   commonName: 'stacks.localhost',
-    //   validityDays: 180,
-    //   verbose: false,
-    // },
-    verbose: true,
+const config: ReverseProxyOptions = {
+  https: {
+    caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
+    certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
+    keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
   },
-  {
-    from: 'localhost:5174',
-    to: 'test.local',
-    https: true,
-    etcHostsCleanup: true,
-    verbose: true,
-  },
-]
+  etcHostsCleanup: true,
+  proxies: [
+    {
+      from: 'localhost:5173',
+      to: 'test.localhost',
+    },
+    {
+      from: 'localhost:5174',
+      to: 'test.local',
+    },
+  ],
+  verbose: true,
+}
 
+// alternatively, you can use the following configuration
 // const config = {
 //   from: 'localhost:5173',
 //   to: 'test2.localhost',
