@@ -42,7 +42,6 @@ function generateWildcardPatterns(domain: string): string[] {
 function generateBaseConfig(options: ReverseProxyConfigs, verbose?: boolean): TlsConfig {
   const domains = extractDomains(options)
   const sslBase = path.join(os.homedir(), '.stacks', 'ssl')
-  console.log('config.https', config.https)
   const httpsConfig: Partial<CustomTlsConfig> = options.https === true
     ? {
         caCertPath: path.join(sslBase, 'rpx-ca.crt'),

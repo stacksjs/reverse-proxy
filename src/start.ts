@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import type { SecureServerOptions } from 'node:http2'
 import type { ServerOptions } from 'node:https'
-import type { BaseReverseProxyConfig, MultiReverseProxyConfig, ProxySetupOptions, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
+import type { MultiReverseProxyConfig, ProxySetupOptions, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
 import * as fs from 'node:fs'
 import * as http from 'node:http'
 import * as https from 'node:https'
@@ -564,8 +564,6 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
     return
 
   debugLog('proxies', 'Starting proxies setup', isMultiProxyConfig(options) ? options.verbose : options.verbose)
-
-  console.log('options', options)
 
   if (options.https) {
     await generateCertificate(options as ReverseProxyConfigs)
