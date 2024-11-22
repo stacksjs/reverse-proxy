@@ -4,24 +4,12 @@ import path from 'node:path'
 import { log } from '@stacksjs/cli'
 import { addCertToSystemTrustStoreAndSaveCert, createRootCA, generateCertificate as generateCert } from '@stacksjs/tlsx'
 import { config } from './config'
-import { debugLog } from './utils'
+import { debugLog, extractDomains } from './utils'
 
 let cachedSSLConfig: { key: string, cert: string, ca?: string } | null = null
 
-function isMultiProxyConfig(options: ReverseProxyConfigs): options is MultiReverseProxyConfig {
+export function isMultiProxyConfig(options: ReverseProxyConfigs): options is MultiReverseProxyConfig {
   return 'proxies' in options
-}
-
-function extractDomains(options: ReverseProxyConfigs): string[] {
-  if (isMultiProxyConfig(options)) {
-    return options.proxies.map((proxy) => {
-      const domain = proxy.to || 'stacks.localhost'
-      return domain.startsWith('http') ? new URL(domain).hostname : domain
-    })
-  }
-
-  const domain = options.to || 'stacks.localhost'
-  return [domain.startsWith('http') ? new URL(domain).hostname : domain]
 }
 
 // Generate wildcard patterns for a domain

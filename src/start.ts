@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import type { SecureServerOptions } from 'node:http2'
 import type { ServerOptions } from 'node:https'
-import type { MultiReverseProxyConfig, ProxySetupOptions, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
+import type { CleanupOptions, MultiReverseProxyConfig, ProxySetupOptions, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
 import * as fs from 'node:fs'
 import * as http from 'node:http'
 import * as https from 'node:https'
@@ -11,16 +11,10 @@ import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 import { addHosts, checkHosts, removeHosts } from './hosts'
 import { generateCertificate, getSSLConfig, httpsConfig } from './https'
-import { debugLog } from './utils'
+import { debugLog, extractDomains } from './utils'
 
 // Keep track of all running servers for cleanup
 const activeServers: Set<http.Server | https.Server> = new Set()
-
-interface CleanupOptions {
-  domain?: string
-  etcHostsCleanup?: boolean
-  verbose?: boolean
-}
 
 /**
  * Cleanup function to close all servers and cleanup hosts file if configured
@@ -45,34 +39,23 @@ export async function cleanup(options?: CleanupOptions): Promise<void> {
   cleanupPromises.push(...serverClosePromises)
 
   // Add hosts file cleanup if configured
-  if (options?.etcHostsCleanup) {
+  if (options?.etcHostsCleanup && options.domains?.length) {
     debugLog('cleanup', 'Cleaning up hosts file entries', options?.verbose)
 
-    // Parse the URL to get the hostname
-    try {
-      const domain = options.domain || 'stacks.localhost'
-      const toUrl = new URL(domain.startsWith('http') ? domain : `http://${domain}`)
-      const hostname = toUrl.hostname
+    const domainsToClean = options.domains.filter(domain => !domain.includes('localhost'))
 
-      // Only clean up if it's not localhost
-      if (!hostname.includes('localhost') && !hostname.includes('127.0.0.1')) {
-        log.info('Cleaning up hosts file entries...')
-        cleanupPromises.push(
-          removeHosts([hostname], options?.verbose)
-            .then(() => {
-              debugLog('cleanup', `Removed hosts entry for ${hostname}`, options?.verbose)
-            })
-            .catch((err) => {
-              debugLog('cleanup', `Failed to remove hosts entry: ${err}`, options?.verbose)
-              log.warn(`Failed to clean up hosts file entry for ${hostname}:`, err)
-              // Don't throw here to allow the rest of cleanup to continue
-            }),
-        )
-      }
-    }
-    catch (err) {
-      debugLog('cleanup', `Error parsing URL during hosts cleanup: ${err}`, options?.verbose)
-      log.warn('Failed to parse URL for hosts cleanup:', err)
+    if (domainsToClean.length > 0) {
+      log.info('Cleaning up hosts file entries...')
+      cleanupPromises.push(
+        removeHosts(domainsToClean, options?.verbose)
+          .then(() => {
+            debugLog('cleanup', `Removed hosts entries for ${domainsToClean.join(', ')}`, options?.verbose)
+          })
+          .catch((err) => {
+            debugLog('cleanup', `Failed to remove hosts entries: ${err}`, options?.verbose)
+            log.warn(`Failed to clean up hosts file entries for ${domainsToClean.join(', ')}:`, err)
+          }),
+      )
     }
   }
 
@@ -511,7 +494,7 @@ export async function setupReverseProxy(options: ProxySetupOptions): Promise<voi
     debugLog('setup', `Setup failed: ${err}`, verbose)
     log.error(`Failed to setup reverse proxy: ${(err as Error).message}`)
     cleanup({
-      domain: to,
+      domains: [to],
       etcHostsCleanup,
       verbose,
     })
@@ -552,7 +535,7 @@ export function startProxy(options: ReverseProxyOption): void {
     debugLog('proxy', `Failed to start proxy: ${err}`, options.verbose)
     log.error(`Failed to start proxy: ${err.message}`)
     cleanup({
-      domain: options.to,
+      domains: [options.to],
       etcHostsCleanup: options.etcHostsCleanup,
       verbose: options.verbose,
     })
@@ -580,18 +563,36 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
     }))
     : [options]
 
+  // Extract all domains for cleanup
+  const domains = extractDomains(options as ReverseProxyConfigs)
+  const sslConfig = options.https ? getSSLConfig() : null
+
+  // Setup cleanup handler with all domains
+  const cleanupHandler = () => cleanup({
+    domains,
+    etcHostsCleanup: isMultiProxyConfig(options) ? options.etcHostsCleanup : options.etcHostsCleanup || false,
+    verbose: isMultiProxyConfig(options) ? options.verbose : options.verbose || false,
+  })
+
+  // Register cleanup handlers
+  process.on('SIGINT', cleanupHandler)
+  process.on('SIGTERM', cleanupHandler)
+  process.on('uncaughtException', (err) => {
+    debugLog('process', `Uncaught exception: ${err}`, true)
+    log.error('Uncaught exception:', err)
+    cleanupHandler()
+  })
+
   // Now start all proxies with the cached SSL config
   for (const option of proxyOptions) {
     try {
       const domain = option.to || 'stacks.localhost'
-      const sslConfig = option.https ? getSSLConfig() : null
-
       debugLog('proxy', `Starting proxy for ${domain} with SSL config: ${!!sslConfig}`, option.verbose)
 
       await startServer({
         from: option.from || 'localhost:5173',
         to: domain,
-        https: option.https ?? false, // Ensure https is always boolean or TlsConfig
+        https: option.https ?? false,
         etcHostsCleanup: option.etcHostsCleanup || false,
         verbose: option.verbose || false,
         _cachedSSLConfig: sslConfig,
@@ -600,11 +601,7 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
     catch (err) {
       debugLog('proxies', `Failed to start proxy for ${option.to}: ${err}`, option.verbose)
       log.error(`Failed to start proxy for ${option.to}:`, err)
-      cleanup({
-        domain: option.to,
-        etcHostsCleanup: option.etcHostsCleanup,
-        verbose: option.verbose,
-      })
+      cleanupHandler()
     }
   }
 }

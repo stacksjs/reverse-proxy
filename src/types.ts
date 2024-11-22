@@ -8,6 +8,12 @@ export interface BaseReverseProxyConfig {
   to: string // stacks.localhost
 }
 
+export interface CleanupOptions {
+  domains?: string[]
+  etcHostsCleanup?: boolean
+  verbose?: boolean
+}
+
 export interface SharedProxySettings {
   https: boolean | CustomTlsConfig
   etcHostsCleanup: boolean
