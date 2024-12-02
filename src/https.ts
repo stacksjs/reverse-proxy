@@ -89,7 +89,7 @@ function generateBaseConfig(options: ReverseProxyConfigs, verbose?: boolean): Tl
   } satisfies TlsConfig
 }
 
-function generateRootCAConfig(): TlsConfig {
+function generateRootCAConfig(verbose: boolean = false): TlsConfig {
   const sslBase = path.join(os.homedir(), '.stacks', 'ssl')
 
   return {
@@ -106,7 +106,7 @@ function generateRootCAConfig(): TlsConfig {
     localityName: 'Playa Vista',
     commonName: 'stacks.localhost',
     validityDays: 3650,
-    verbose: true,
+    verbose,
   }
 }
 
@@ -131,7 +131,7 @@ export async function generateCertificate(options: ReverseProxyConfigs): Promise
   debugLog('ssl', `Generating certificate for domains: ${domains.join(', ')}`, verbose)
 
   // Generate Root CA first
-  const rootCAConfig = generateRootCAConfig()
+  const rootCAConfig = generateRootCAConfig(verbose)
   log.info('Generating Root CA certificate...')
   const caCert = await createRootCA(rootCAConfig)
 
