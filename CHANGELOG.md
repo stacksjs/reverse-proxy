@@ -1,6 +1,21 @@
 # Changelog
 
 
+## v0.4.0...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.4.0...main)
+
+### 🏡 Chore
+
+- Update readme ([08e61e8](https://github.com/stacksjs/rpx/commit/08e61e8))
+- Ensure verbose is configurable ([0c2bb22](https://github.com/stacksjs/rpx/commit/0c2bb22))
+- Add default export ([c064d8d](https://github.com/stacksjs/rpx/commit/c064d8d))
+- Ensure verbose is false by default ([ee341b2](https://github.com/stacksjs/rpx/commit/ee341b2))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.3.1...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.3.1...main)
