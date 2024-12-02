@@ -15,6 +15,6 @@ export const config: ReverseProxyConfigs = await loadConfig({
       keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
     },
     etcHostsCleanup: true,
-    verbose: true,
+    verbose: false,
   },
 })
