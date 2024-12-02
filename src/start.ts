@@ -2,16 +2,16 @@
 import type { SecureServerOptions } from 'node:http2'
 import type { ServerOptions } from 'node:https'
 import type { CleanupOptions, MultiReverseProxyConfig, ProxySetupOptions, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
-import * as fs from 'node:fs'
 import * as http from 'node:http'
 import * as https from 'node:https'
 import * as net from 'node:net'
 import process from 'node:process'
 import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
+import { config } from './config'
 import { addHosts, checkHosts, removeHosts } from './hosts'
-import { generateCertificate, getSSLConfig, httpsConfig } from './https'
-import { debugLog, extractDomains } from './utils'
+import { checkExistingCertificates, generateCertificate, getSSLConfig, httpsConfig, loadSSLConfig } from './https'
+import { debugLog, extractDomains, getDomainFromOptions } from './utils'
 
 // Keep track of all running servers for cleanup
 const activeServers: Set<http.Server | https.Server> = new Set()
@@ -80,53 +80,6 @@ process.on('uncaughtException', (err) => {
   log.error('Uncaught exception:', err)
   cleanup()
 })
-
-/**
- * Load SSL certificates from files or use provided strings
- */
-async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | null> {
-  debugLog('ssl', `Loading SSL configuration`, options.verbose)
-
-  if (options.https === true)
-    options.https = httpsConfig(options)
-  else if (options.https === false)
-    return null
-
-  // Early return for non-SSL configuration
-  if (!options.https?.keyPath && !options.https?.certPath) {
-    debugLog('ssl', 'No SSL configuration provided', options.verbose)
-    return null
-  }
-
-  if ((options.https?.keyPath && !options.https?.certPath) || (!options.https?.keyPath && options.https?.certPath)) {
-    const missing = !options.https?.keyPath ? 'keyPath' : 'certPath'
-    debugLog('ssl', `Invalid SSL configuration - missing ${missing}`, options.verbose)
-    throw new Error(`SSL Configuration requires both keyPath and certPath. Missing: ${missing}`)
-  }
-
-  try {
-    if (!options.https?.keyPath || !options.https?.certPath)
-      return null
-
-    // Try to read existing certificates
-    try {
-      debugLog('ssl', 'Reading SSL certificate files', options.verbose)
-      const key = await fs.promises.readFile(options.https?.keyPath, 'utf8')
-      const cert = await fs.promises.readFile(options.https?.certPath, 'utf8')
-
-      debugLog('ssl', 'SSL configuration loaded successfully', options.verbose)
-      return { key, cert }
-    }
-    catch (error) {
-      debugLog('ssl', `Failed to read certificates: ${error}`, options.verbose)
-      return null
-    }
-  }
-  catch (err) {
-    debugLog('ssl', `SSL configuration error: ${err}`, options.verbose)
-    throw err
-  }
-}
 
 /**
  * Check if a port is in use
@@ -203,8 +156,8 @@ export async function startServer(options: SingleReverseProxyConfig): Promise<vo
   debugLog('server', `Starting server with options: ${JSON.stringify(options)}`, options.verbose)
 
   // Parse URLs early to get the hostnames
-  const fromUrl = new URL(options.from.startsWith('http') ? options.from : `http://${options.from}`)
-  const toUrl = new URL(options.to.startsWith('http') ? options.to : `http://${options.to}`)
+  const fromUrl = new URL((options.from?.startsWith('http') ? options.from : `http://${options.from}`) || 'localhost:5173')
+  const toUrl = new URL((options.to?.startsWith('http') ? options.to : `http://${options.to}`) || 'stacks.localhost')
   const fromPort = Number.parseInt(fromUrl.port) || (fromUrl.protocol.includes('https:') ? 443 : 80)
 
   // Check and update hosts file for custom domains
@@ -313,7 +266,7 @@ export async function startServer(options: SingleReverseProxyConfig): Promise<vo
 
   await setupReverseProxy({
     ...options,
-    from: options.from,
+    from: options.from || 'localhost:5173',
     to: toUrl.hostname,
     fromPort,
     sourceUrl: {
@@ -519,59 +472,96 @@ export function startHttpRedirectServer(verbose?: boolean): void {
 }
 
 export function startProxy(options: ReverseProxyOption): void {
-  debugLog('proxy', `Starting proxy with options: ${JSON.stringify(options)}`, options?.verbose)
+  const mergedOptions = {
+    ...config,
+    ...options,
+  }
+
+  debugLog('proxy', `Starting proxy with options: ${JSON.stringify(mergedOptions)}`, mergedOptions?.verbose)
 
   const serverOptions: SingleReverseProxyConfig = {
-    from: options?.from || 'localhost:5173',
-    to: options?.to || 'stacks.localhost',
-    https: httpsConfig(options),
-    etcHostsCleanup: options?.etcHostsCleanup || false,
-    verbose: options?.verbose || false,
+    from: mergedOptions.from,
+    to: mergedOptions.to,
+    https: httpsConfig(mergedOptions),
+    etcHostsCleanup: mergedOptions.etcHostsCleanup,
+    verbose: mergedOptions.verbose,
   }
 
   console.log('serverOptions', serverOptions)
 
   startServer(serverOptions).catch((err) => {
-    debugLog('proxy', `Failed to start proxy: ${err}`, options.verbose)
+    debugLog('proxy', `Failed to start proxy: ${err}`, mergedOptions.verbose)
     log.error(`Failed to start proxy: ${err.message}`)
     cleanup({
-      domains: [options.to],
-      etcHostsCleanup: options.etcHostsCleanup,
-      verbose: options.verbose,
+      domains: [mergedOptions.to],
+      etcHostsCleanup: mergedOptions.etcHostsCleanup,
+      verbose: mergedOptions.verbose,
     })
   })
 }
 
 export async function startProxies(options?: ReverseProxyOptions): Promise<void> {
-  if (!options)
-    return
-
-  debugLog('proxies', 'Starting proxies setup', isMultiProxyConfig(options) ? options.verbose : options.verbose)
-
-  if (options.https) {
-    await generateCertificate(options as ReverseProxyConfigs)
+  const mergedOptions = {
+    ...config,
+    ...options,
   }
 
-  // Convert configurations to a flat array of proxy configs
-  const proxyOptions = isMultiProxyConfig(options)
-    ? options.proxies.map(proxy => ({
+  // First, get the primary domain before merging configs
+  const primaryDomain = isMultiProxyConfig(mergedOptions) && mergedOptions.proxies?.[0]?.to
+    ? mergedOptions.proxies[0].to
+    : mergedOptions.to
+
+  console.log('Merged options:', mergedOptions)
+
+  debugLog('proxies', 'Starting proxies setup', mergedOptions.verbose)
+
+  if (mergedOptions.https) {
+    // Ensure HTTPS config uses the correct domain
+    if (typeof mergedOptions.https === 'boolean') {
+      mergedOptions.https = {
+        caCertPath: `${config.sslPath}/${primaryDomain}.ca.crt`,
+        certPath: `${config.sslPath}/${primaryDomain}.crt`,
+        keyPath: `${config.sslPath}/${primaryDomain}.crt.key`,
+      }
+    }
+
+    const existingSSLConfig = await checkExistingCertificates(mergedOptions)
+
+    if (existingSSLConfig) {
+      debugLog('ssl', `Using existing certificates for ${primaryDomain}`, mergedOptions.verbose)
+      console.log(`Using existing SSL certificates for ${primaryDomain}`)
+      mergedOptions._cachedSSLConfig = existingSSLConfig
+    }
+    else {
+      debugLog('ssl', `No valid existing certificates found for ${primaryDomain}, generating new ones`, mergedOptions.verbose)
+      await generateCertificate({
+        ...mergedOptions as ReverseProxyConfigs,
+        to: primaryDomain,
+        https: mergedOptions.https,
+      })
+      mergedOptions._cachedSSLConfig = await checkExistingCertificates(mergedOptions as ReverseProxyConfigs)
+    }
+  }
+
+  // Rest of the function remains the same...
+  const proxyOptions = isMultiProxyConfig(mergedOptions)
+    ? mergedOptions.proxies.map(proxy => ({
       ...proxy,
-      https: options.https,
-      etcHostsCleanup: options.etcHostsCleanup,
-      verbose: options.verbose,
-      _cachedSSLConfig: options._cachedSSLConfig,
+      https: mergedOptions.https,
+      etcHostsCleanup: mergedOptions.etcHostsCleanup,
+      verbose: mergedOptions.verbose,
+      _cachedSSLConfig: mergedOptions._cachedSSLConfig,
     }))
-    : [options]
+    : [mergedOptions]
 
-  // Extract all domains for cleanup
-  const domains = extractDomains(options as ReverseProxyConfigs)
-  const sslConfig = options.https ? getSSLConfig() : null
+  const domains = extractDomains(mergedOptions)
+  const sslConfig = mergedOptions?._cachedSSLConfig
 
-  // Setup cleanup handler with all domains
+  // Setup cleanup handler
   const cleanupHandler = () => cleanup({
     domains,
-    etcHostsCleanup: isMultiProxyConfig(options) ? options.etcHostsCleanup : options.etcHostsCleanup || false,
-    verbose: isMultiProxyConfig(options) ? options.verbose : options.verbose || false,
+    etcHostsCleanup: isMultiProxyConfig(mergedOptions) ? mergedOptions.etcHostsCleanup : mergedOptions.etcHostsCleanup || false,
+    verbose: isMultiProxyConfig(mergedOptions) ? mergedOptions.verbose : mergedOptions.verbose || false,
   })
 
   // Register cleanup handlers
@@ -583,7 +573,7 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
     cleanupHandler()
   })
 
-  // Now start all proxies with the cached SSL config
+  // Start all proxies
   for (const option of proxyOptions) {
     try {
       const domain = option.to || 'stacks.localhost'

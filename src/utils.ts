@@ -19,3 +19,15 @@ export function extractDomains(options: ReverseProxyConfigs): string[] {
   const domain = options.to || 'stacks.localhost'
   return [domain.startsWith('http') ? new URL(domain).hostname : domain]
 }
+
+export function getDomainFromOptions(options: ReverseProxyConfigs): string {
+  if (isMultiProxyConfig(options) && options.proxies.length > 0) {
+    return options.proxies[0].to ?? 'stacks.localhost'
+  }
+
+  if ('to' in options) {
+    return options.to ?? 'stacks.localhost'
+  }
+
+  return 'stacks.localhost'
+}

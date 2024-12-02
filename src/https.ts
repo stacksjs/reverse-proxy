@@ -1,10 +1,11 @@
-import type { CustomTlsConfig, MultiReverseProxyConfig, ReverseProxyConfigs, TlsConfig } from './types'
+import type { CustomTlsConfig, MultiReverseProxyConfig, ReverseProxyConfig, ReverseProxyConfigs, ReverseProxyOption, SSLConfig, TlsConfig } from './types'
+import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { log } from '@stacksjs/cli'
 import { addCertToSystemTrustStoreAndSaveCert, createRootCA, generateCertificate as generateCert } from '@stacksjs/tlsx'
 import { config } from './config'
-import { debugLog, extractDomains } from './utils'
+import { debugLog, extractDomains, getDomainFromOptions } from './utils'
 
 let cachedSSLConfig: { key: string, cert: string, ca?: string } | null = null
 
@@ -110,8 +111,72 @@ function generateRootCAConfig(verbose: boolean = false): TlsConfig {
   }
 }
 
-export function httpsConfig(options: ReverseProxyConfigs): TlsConfig {
-  return generateBaseConfig(options, options.verbose)
+export function httpsConfig(options: ReverseProxyConfig): CustomTlsConfig {
+  const domain = getDomainFromOptions(options)
+
+  // Log the domain and paths being used
+  debugLog('ssl', `Using domain ${domain} for SSL config`, options.verbose)
+
+  const sslConfig = {
+    caCertPath: `${config.sslPath}/${domain}.ca.crt`,
+    certPath: `${config.sslPath}/${domain}.crt`,
+    keyPath: `${config.sslPath}/${domain}.crt.key`,
+  }
+
+  debugLog('ssl', `SSL config paths: ${JSON.stringify(sslConfig)}`, options.verbose)
+  return sslConfig
+}
+
+/**
+ * Load SSL certificates from files or use provided strings
+ */
+export async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLConfig | null> {
+  debugLog('ssl', `Loading SSL configuration`, options.verbose)
+
+  const mergedOptions = {
+    ...config,
+    ...options,
+  }
+
+  if (options.https === true)
+    options.https = httpsConfig(mergedOptions)
+  else if (options.https === false)
+    return null
+
+  // Early return for non-SSL configuration
+  if (!options.https?.keyPath && !options.https?.certPath) {
+    debugLog('ssl', 'No SSL configuration provided', options.verbose)
+    return null
+  }
+
+  if ((options.https?.keyPath && !options.https?.certPath) || (!options.https?.keyPath && options.https?.certPath)) {
+    const missing = !options.https?.keyPath ? 'keyPath' : 'certPath'
+    debugLog('ssl', `Invalid SSL configuration - missing ${missing}`, options.verbose)
+    throw new Error(`SSL Configuration requires both keyPath and certPath. Missing: ${missing}`)
+  }
+
+  try {
+    if (!options.https?.keyPath || !options.https?.certPath)
+      return null
+
+    // Try to read existing certificates
+    try {
+      debugLog('ssl', 'Reading SSL certificate files', options.verbose)
+      const key = await fs.readFile(options.https?.keyPath, 'utf8')
+      const cert = await fs.readFile(options.https?.certPath, 'utf8')
+
+      debugLog('ssl', 'SSL configuration loaded successfully', options.verbose)
+      return { key, cert }
+    }
+    catch (error) {
+      debugLog('ssl', `Failed to read certificates: ${error}`, options.verbose)
+      return null
+    }
+  }
+  catch (err) {
+    debugLog('ssl', `SSL configuration error: ${err}`, options.verbose)
+    throw err
+  }
 }
 
 export async function generateCertificate(options: ReverseProxyConfigs): Promise<void> {
@@ -163,4 +228,41 @@ export async function generateCertificate(options: ReverseProxyConfigs): Promise
 
 export function getSSLConfig(): { key: string, cert: string, ca?: string } | null {
   return cachedSSLConfig
+}
+
+export async function checkExistingCertificates(options: ReverseProxyConfigs): Promise<SSLConfig | null> {
+  // Skip if HTTPS is not enabled
+  if (!options.https)
+    return null
+
+  const mergedOptions = {
+    ...config,
+    ...options,
+  }
+
+  // Convert boolean https to TLS config if needed
+  const tlsConfig = httpsConfig(mergedOptions)
+
+  try {
+    // Read the existing certificates
+    const key = await fs.readFile(tlsConfig.keyPath, 'utf8')
+    const cert = await fs.readFile(tlsConfig.certPath, 'utf8')
+    let ca: string | undefined
+
+    if (tlsConfig.caCertPath) {
+      try {
+        ca = await fs.readFile(tlsConfig.caCertPath, 'utf8')
+      }
+      catch (err) {
+        debugLog('ssl', `Failed to read CA cert: ${err}`, options.verbose)
+      }
+    }
+
+    // If we successfully read the certificates, return them
+    return { key, cert, ca }
+  }
+  catch (err) {
+    debugLog('ssl', `Failed to read certificates: ${err}`, options.verbose)
+    return null
+  }
 }

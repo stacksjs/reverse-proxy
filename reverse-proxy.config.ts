@@ -19,7 +19,7 @@ const config: ReverseProxyOptions = {
       to: 'test.local',
     },
   ],
-  verbose: true,
+  verbose: false,
 }
 
 // alternatively, you can use the following configuration
