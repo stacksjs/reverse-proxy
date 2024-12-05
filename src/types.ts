@@ -1,8 +1,4 @@
-import type { TlsConfig } from '@stacksjs/tlsx'
-
-export type CustomTlsConfig =
-  Partial<Omit<TlsConfig, 'caCertPath' | 'certPath' | 'keyPath'>> &
-  Pick<TlsConfig, 'caCertPath' | 'certPath' | 'keyPath'>
+import type { TlsConfig, TlsOption } from '@stacksjs/tlsx'
 
 export interface BaseReverseProxyConfig {
   from: string // localhost:5173
@@ -17,10 +13,9 @@ export interface CleanupOptions {
 }
 
 export interface SharedProxyConfig {
-  https: boolean | CustomTlsConfig
+  https: boolean | TlsOption
   etcHostsCleanup: boolean
   verbose: boolean
-  sslPath?: string
   _cachedSSLConfig?: SSLConfig | null
 }
 export type SharedProxyOptions = Partial<SharedProxyConfig>
@@ -64,4 +59,4 @@ export interface ProxySetupOptions extends Omit<ReverseProxyOption, 'from'> {
   portManager?: PortManager
 }
 
-export type { TlsConfig }
+export type { TlsConfig, TlsOption }

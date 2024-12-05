@@ -1,130 +1,161 @@
-import type { CustomTlsConfig, MultiReverseProxyConfig, ReverseProxyConfig, ReverseProxyConfigs, ReverseProxyOption, SSLConfig, TlsConfig } from './types'
+import type { MultiReverseProxyConfig, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig, TlsConfig } from './types'
 import fs from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { log } from '@stacksjs/cli'
 import { addCertToSystemTrustStoreAndSaveCert, createRootCA, generateCertificate as generateCert } from '@stacksjs/tlsx'
 import { config } from './config'
-import { debugLog, extractDomains, getDomainFromOptions } from './utils'
+import { debugLog, isValidRootCA } from './utils'
 
 let cachedSSLConfig: { key: string, cert: string, ca?: string } | null = null
 
+/**
+ * Type guard for multi-proxy configuration
+ */
 export function isMultiProxyConfig(options: ReverseProxyConfigs): options is MultiReverseProxyConfig {
-  return 'proxies' in options
+  return 'proxies' in options && Array.isArray(options.proxies)
+}
+
+/**
+ * Type guard to check if options are for multi-proxy configuration
+ */
+export function isMultiProxyOptions(options: ReverseProxyOption | ReverseProxyOptions): options is MultiReverseProxyConfig {
+  return 'proxies' in options && Array.isArray((options as MultiReverseProxyConfig).proxies)
+}
+
+/**
+ * Type guard to check if options are for single-proxy configuration
+ */
+export function isSingleProxyOptions(options: ReverseProxyOption | ReverseProxyOptions): options is SingleReverseProxyConfig {
+  return 'to' in options && typeof (options as SingleReverseProxyConfig).to === 'string'
+}
+
+/**
+ * Resolves SSL paths based on configuration
+ */
+export function resolveSSLPaths(options: ReverseProxyConfigs, defaultConfig: typeof config): TlsConfig {
+  const domain = isMultiProxyConfig(options)
+    ? options.proxies[0].to || 'stacks.localhost'
+    : options.to || 'stacks.localhost'
+
+  // If HTTPS is an object and has explicit paths defined, use those
+  if (typeof options.https === 'object' && typeof defaultConfig.https === 'object') {
+    const hasAllPaths = options.https.caCertPath && options.https.certPath && options.https.keyPath
+    if (hasAllPaths) {
+      // Create base TLS config
+      const baseConfig = httpsConfig({
+        ...options,
+        to: domain,
+        https: defaultConfig.https,
+      })
+
+      // Filter out undefined values from arrays
+      const altNameIPs = options.https.altNameIPs?.filter((ip): ip is string => ip !== undefined) || baseConfig.altNameIPs
+      const altNameURIs = options.https.altNameURIs?.filter((uri): uri is string => uri !== undefined) || baseConfig.altNameURIs
+
+      // Override with provided paths
+      return {
+        ...baseConfig,
+        caCertPath: options.https.caCertPath || baseConfig.caCertPath,
+        certPath: options.https.certPath || baseConfig.certPath,
+        keyPath: options.https.keyPath || baseConfig.keyPath,
+        basePath: options.https.basePath || baseConfig.basePath,
+        commonName: options.https.commonName || baseConfig.commonName,
+        organizationName: options.https.organizationName || baseConfig.organizationName,
+        countryName: options.https.countryName || baseConfig.countryName,
+        stateName: options.https.stateName || baseConfig.stateName,
+        localityName: options.https.localityName || baseConfig.localityName,
+        validityDays: options.https.validityDays || baseConfig.validityDays,
+        altNameIPs,
+        altNameURIs,
+        verbose: options.verbose || baseConfig.verbose,
+      }
+    }
+  }
+
+  // Otherwise, generate paths based on the domain
+  return httpsConfig({
+    ...options,
+    to: domain,
+  })
 }
 
 // Generate wildcard patterns for a domain
-function generateWildcardPatterns(domain: string): string[] {
+export function generateWildcardPatterns(domain: string): string[] {
   const patterns = new Set<string>()
   patterns.add(domain)
 
-  // Split domain into parts (e.g., "test.local" -> ["test", "local"])
   const parts = domain.split('.')
-  if (parts.length >= 2) {
-    // Add wildcard for the domain (e.g., "*.local" for "test.local")
+  if (parts.length >= 2)
     patterns.add(`*.${parts.slice(1).join('.')}`)
-  }
 
   return Array.from(patterns)
 }
 
-function generateBaseConfig(options: ReverseProxyConfigs, verbose?: boolean): TlsConfig {
-  const domains = extractDomains(options)
-  const sslBase = path.join(os.homedir(), '.stacks', 'ssl')
-  const httpsConfig: Partial<CustomTlsConfig> = options.https === true
-    ? {
-        caCertPath: path.join(sslBase, 'rpx-ca.crt'),
-        certPath: path.join(sslBase, 'rpx.crt'),
-        keyPath: path.join(sslBase, 'rpx.key'),
-      }
-    : typeof config.https === 'object'
-      ? {
-          ...options.https,
-          ...config.https,
-        }
-      : {}
+export function getPrimaryDomain(options?: ReverseProxyOption | ReverseProxyOptions): string {
+  if (!options)
+    return 'stacks.localhost'
 
-  debugLog('ssl', `Extracted domains: ${domains.join(', ')}`, verbose)
-  debugLog('ssl', `Using SSL base path: ${sslBase}`, verbose)
-  debugLog('ssl', `Using HTTPS config: ${JSON.stringify(httpsConfig)}`, verbose)
-  // Generate all possible SANs, including wildcards
-  const allPatterns = new Set<string>()
-  domains.forEach((domain) => {
-    // Add direct domain
-    allPatterns.add(domain)
+  if (isMultiProxyOptions(options) && options.proxies.length > 0)
+    return options.proxies[0].to || 'stacks.localhost'
 
-    // Add wildcard patterns
-    generateWildcardPatterns(domain).forEach(pattern => allPatterns.add(pattern))
-  })
+  if (isSingleProxyOptions(options))
+    return options.to || 'stacks.localhost'
+
+  return 'stacks.localhost'
+}
+
+/**
+ * Generates SSL file paths based on domain
+ */
+export function generateSSLPaths(options?: ReverseProxyOptions): {
+  caCertPath: string
+  certPath: string
+  keyPath: string
+} {
+  const domain = getPrimaryDomain(options)
+  let basePath = ''
+  if (typeof options?.https === 'object') {
+    basePath = options.https.basePath || ''
+    return {
+      caCertPath: options.https.caCertPath || join(basePath, `${domain}.ca.crt`),
+      certPath: options.https.certPath || join(basePath, `${domain}.crt`),
+      keyPath: options.https.keyPath || join(basePath, `${domain}.key`),
+    }
+  }
+
+  const sslBase = basePath || join(homedir(), '.stacks', 'ssl')
+  const sanitizedDomain = domain.replace(/\*/g, 'wildcard')
+
+  return {
+    caCertPath: join(sslBase, `${sanitizedDomain}.ca.crt`),
+    certPath: join(sslBase, `${sanitizedDomain}.crt`),
+    keyPath: join(sslBase, `${sanitizedDomain}.key`),
+  }
+}
+
+export function getAllDomains(options: ReverseProxyOption | ReverseProxyOptions): Set<string> {
+  const domains = new Set<string>()
+
+  if (isMultiProxyOptions(options)) {
+    options.proxies.forEach((proxy) => {
+      const domain = proxy.to || 'stacks.localhost'
+      generateWildcardPatterns(domain).forEach(pattern => domains.add(pattern))
+    })
+  }
+  else if (isSingleProxyOptions(options)) {
+    const domain = options.to || 'stacks.localhost'
+    generateWildcardPatterns(domain).forEach(pattern => domains.add(pattern))
+  }
+  else {
+    domains.add('stacks.localhost')
+  }
 
   // Add localhost patterns
-  allPatterns.add('localhost')
-  allPatterns.add('*.localhost')
+  domains.add('localhost')
+  domains.add('*.localhost')
 
-  const uniqueDomains = Array.from(allPatterns)
-  debugLog('ssl', `Generated domain patterns: ${uniqueDomains.join(', ')}`, verbose)
-
-  // Create a single object that contains all the config
-  return {
-    // Use the first domain for the certificate CN
-    domain: domains[0],
-    hostCertCN: domains[0],
-    caCertPath: httpsConfig?.caCertPath ?? path.join(sslBase, 'rpx-ca.crt'),
-    certPath: httpsConfig?.certPath ?? path.join(sslBase, 'rpx.crt'),
-    keyPath: httpsConfig?.keyPath ?? path.join(sslBase, 'rpx.key'),
-    altNameIPs: httpsConfig?.altNameIPs ?? ['127.0.0.1', '::1'],
-    altNameURIs: httpsConfig?.altNameURIs ?? [],
-    // Include all domains in the SAN
-    commonName: httpsConfig?.commonName ?? domains[0],
-    organizationName: httpsConfig?.organizationName ?? 'Local Development',
-    countryName: httpsConfig?.countryName ?? 'US',
-    stateName: httpsConfig?.stateName ?? 'California',
-    localityName: httpsConfig?.localityName ?? 'Playa Vista',
-    validityDays: httpsConfig?.validityDays ?? 825,
-    verbose: verbose ?? false,
-    // Add all domains as Subject Alternative Names
-    subjectAltNames: uniqueDomains.map(domain => ({
-      type: 2, // DNS type
-      value: domain,
-    })),
-  } satisfies TlsConfig
-}
-
-function generateRootCAConfig(verbose: boolean = false): TlsConfig {
-  const sslBase = path.join(os.homedir(), '.stacks', 'ssl')
-
-  return {
-    domain: 'stacks.localhost',
-    hostCertCN: 'stacks.localhost',
-    caCertPath: path.join(sslBase, 'rpx-root-ca.crt'),
-    certPath: path.join(sslBase, 'rpx-certificate.crt'),
-    keyPath: path.join(sslBase, 'rpx-certificate.key'),
-    altNameIPs: ['127.0.0.1', '::1'],
-    altNameURIs: [],
-    organizationName: 'Stacks Local Development',
-    countryName: 'US',
-    stateName: 'California',
-    localityName: 'Playa Vista',
-    commonName: 'stacks.localhost',
-    validityDays: 3650,
-    verbose,
-  }
-}
-
-export function httpsConfig(options: ReverseProxyConfig): CustomTlsConfig {
-  const domain = getDomainFromOptions(options)
-
-  // Log the domain and paths being used
-  debugLog('ssl', `Using domain ${domain} for SSL config`, options.verbose)
-
-  const sslConfig = {
-    caCertPath: `${config.sslPath}/${domain}.ca.crt`,
-    certPath: `${config.sslPath}/${domain}.crt`,
-    keyPath: `${config.sslPath}/${domain}.crt.key`,
-  }
-
-  debugLog('ssl', `SSL config paths: ${JSON.stringify(sslConfig)}`, options.verbose)
-  return sslConfig
+  return domains
 }
 
 /**
@@ -138,10 +169,7 @@ export async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLCon
     ...options,
   }
 
-  if (options.https === true)
-    options.https = httpsConfig(mergedOptions)
-  else if (options.https === false)
-    return null
+  options.https = httpsConfig(mergedOptions)
 
   // Early return for non-SSL configuration
   if (!options.https?.keyPath && !options.https?.certPath) {
@@ -179,34 +207,34 @@ export async function loadSSLConfig(options: ReverseProxyOption): Promise<SSLCon
   }
 }
 
-export async function generateCertificate(options: ReverseProxyConfigs): Promise<void> {
+export async function generateCertificate(options: ReverseProxyOptions): Promise<void> {
   if (cachedSSLConfig) {
-    const verbose = isMultiProxyConfig(options) ? options.verbose : options.verbose
-    debugLog('ssl', 'Using cached SSL configuration', verbose)
+    debugLog('ssl', 'Using cached SSL configuration', options.verbose)
     return
   }
 
   // Get all unique domains from the configuration
-  const domains = isMultiProxyConfig(options)
-    ? [options.proxies[0].to, ...options.proxies.map(proxy => proxy.to)] // Include the first domain from proxies array
-    : [options.to]
+  const domains: string[] = isMultiProxyOptions(options)
+    ? options.proxies.map(proxy => proxy.to)
+    : [(options as SingleReverseProxyConfig).to]
 
-  const verbose = isMultiProxyConfig(options) ? options.verbose : options.verbose
-
-  debugLog('ssl', `Generating certificate for domains: ${domains.join(', ')}`, verbose)
+  debugLog('ssl', `Generating certificate for domains: ${domains.join(', ')}`, options.verbose)
 
   // Generate Root CA first
-  const rootCAConfig = generateRootCAConfig(verbose)
+  const rootCAConfig = httpsConfig(options, options.verbose)
+
   log.info('Generating Root CA certificate...')
   const caCert = await createRootCA(rootCAConfig)
 
   // Generate the host certificate with all domains
-  const hostConfig = generateBaseConfig(options, verbose)
+  const hostConfig = httpsConfig(options, options.verbose)
+  // eslint-disable-next-line no-console
+  console.log('hostConfig', hostConfig)
   log.info(`Generating host certificate for: ${domains.join(', ')}`)
 
   const hostCert = await generateCert({
     ...hostConfig,
-    rootCAObject: {
+    rootCA: {
       certificate: caCert.certificate,
       privateKey: caCert.privateKey,
     },
@@ -223,46 +251,102 @@ export async function generateCertificate(options: ReverseProxyConfigs): Promise
   }
 
   log.success(`Certificate generated successfully for ${domains.length} domain${domains.length > 1 ? 's' : ''}`)
-  debugLog('ssl', `Certificate includes domains: ${domains.join(', ')}`, verbose)
+  debugLog('ssl', `Certificate includes domains: ${domains.join(', ')}`, options.verbose)
 }
 
 export function getSSLConfig(): { key: string, cert: string, ca?: string } | null {
   return cachedSSLConfig
 }
 
-export async function checkExistingCertificates(options: ReverseProxyConfigs): Promise<SSLConfig | null> {
-  // Skip if HTTPS is not enabled
-  if (!options.https)
-    return null
-
-  const mergedOptions = {
-    ...config,
-    ...options,
-  }
-
-  // Convert boolean https to TLS config if needed
-  const tlsConfig = httpsConfig(mergedOptions)
+// needs to accept the options
+export async function checkExistingCertificates(options?: ReverseProxyOptions): Promise<SSLConfig | null> {
+  const name = getPrimaryDomain(options)
+  const paths = generateSSLPaths(options)
 
   try {
-    // Read the existing certificates
-    const key = await fs.readFile(tlsConfig.keyPath, 'utf8')
-    const cert = await fs.readFile(tlsConfig.certPath, 'utf8')
+    debugLog('ssl', `Checking certificates for ${name} at paths:`, options?.verbose)
+    debugLog('ssl', `CA: ${paths.caCertPath}`, options?.verbose)
+    debugLog('ssl', `Cert: ${paths.certPath}`, options?.verbose)
+    debugLog('ssl', `Key: ${paths.keyPath}`, options?.verbose)
+
+    const key = await fs.readFile(paths.keyPath, 'utf8')
+    const cert = await fs.readFile(paths.certPath, 'utf8')
     let ca: string | undefined
 
-    if (tlsConfig.caCertPath) {
+    if (paths.caCertPath) {
       try {
-        ca = await fs.readFile(tlsConfig.caCertPath, 'utf8')
+        ca = await fs.readFile(paths.caCertPath, 'utf8')
       }
       catch (err) {
-        debugLog('ssl', `Failed to read CA cert: ${err}`, options.verbose)
+        debugLog('ssl', `Failed to read CA cert: ${err}`, options?.verbose)
       }
     }
 
-    // If we successfully read the certificates, return them
     return { key, cert, ca }
   }
   catch (err) {
-    debugLog('ssl', `Failed to read certificates: ${err}`, options.verbose)
+    debugLog('ssl', `Failed to read certificates: ${err}`, options?.verbose)
     return null
+  }
+}
+
+export function httpsConfig(options: ReverseProxyOption | ReverseProxyOptions, verbose?: boolean): TlsConfig {
+  const primaryDomain = getPrimaryDomain(options)
+  debugLog('ssl', `Primary domain: ${primaryDomain}`, verbose)
+
+  // Generate paths based on domain if not explicitly provided
+  const defaultPaths = generateSSLPaths(options)
+
+  // If HTTPS paths are explicitly provided, use those
+  if (typeof options.https === 'object') {
+    const config: TlsConfig = {
+      domain: primaryDomain,
+      hostCertCN: primaryDomain,
+      basePath: options.https.basePath || '',
+      caCertPath: options.https.caCertPath || defaultPaths.caCertPath,
+      certPath: options.https.certPath || defaultPaths.certPath,
+      keyPath: options.https.keyPath || defaultPaths.keyPath,
+      altNameIPs: ['127.0.0.1', '::1'],
+      altNameURIs: [],
+      commonName: options.https.commonName || primaryDomain,
+      organizationName: options.https.organizationName || 'Local Development',
+      countryName: options.https.countryName || 'US',
+      stateName: options.https.stateName || 'California',
+      localityName: options.https.localityName || 'Playa Vista',
+      validityDays: options.https.validityDays || 825,
+      verbose: verbose || false,
+      subjectAltNames: Array.from(getAllDomains(options)).map(domain => ({
+        type: 2,
+        value: domain,
+      })),
+    }
+
+    // Add optional properties if they exist and are valid
+    if (isValidRootCA(options.https.rootCA)) {
+      config.rootCA = options.https.rootCA
+    }
+
+    return config
+  }
+
+  // Return default configuration
+  return {
+    domain: primaryDomain,
+    hostCertCN: primaryDomain,
+    basePath: '',
+    ...defaultPaths,
+    altNameIPs: ['127.0.0.1', '::1'],
+    altNameURIs: [],
+    commonName: primaryDomain,
+    organizationName: 'Local Development',
+    countryName: 'US',
+    stateName: 'California',
+    localityName: 'Playa Vista',
+    validityDays: 825,
+    verbose: verbose || false,
+    subjectAltNames: Array.from(getAllDomains(options)).map(domain => ({
+      type: 2,
+      value: domain,
+    })),
   }
 }

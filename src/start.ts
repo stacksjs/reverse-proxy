@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import type { SecureServerOptions } from 'node:http2'
 import type { ServerOptions } from 'node:https'
-import type { CleanupOptions, MultiReverseProxyConfig, ProxySetupOptions, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
+import type { CleanupOptions, ProxySetupOptions, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
 import * as http from 'node:http'
 import * as https from 'node:https'
 import * as net from 'node:net'
@@ -10,8 +10,8 @@ import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 import { config } from './config'
 import { addHosts, checkHosts, removeHosts } from './hosts'
-import { checkExistingCertificates, generateCertificate, getSSLConfig, httpsConfig, loadSSLConfig } from './https'
-import { debugLog, extractDomains, getDomainFromOptions } from './utils'
+import { checkExistingCertificates, generateCertificate, httpsConfig, isMultiProxyConfig, loadSSLConfig, resolveSSLPaths } from './https'
+import { debugLog } from './utils'
 
 // Keep track of all running servers for cleanup
 const activeServers: Set<http.Server | https.Server> = new Set()
@@ -501,49 +501,41 @@ export function startProxy(options: ReverseProxyOption): void {
 }
 
 export async function startProxies(options?: ReverseProxyOptions): Promise<void> {
+  debugLog('proxies', 'Starting proxy setup', options?.verbose)
+
   const mergedOptions = {
     ...config,
     ...options,
   }
 
-  // First, get the primary domain before merging configs
-  const primaryDomain = isMultiProxyConfig(mergedOptions) && mergedOptions.proxies?.[0]?.to
-    ? mergedOptions.proxies[0].to
-    : mergedOptions.to
+  // Get primary domain for certificates
+  const primaryDomain = isMultiProxyConfig(mergedOptions)
+    ? mergedOptions.proxies[0].to || 'stacks.localhost'
+    : mergedOptions.to || 'stacks.localhost'
 
-  console.log('Merged options:', mergedOptions)
-
-  debugLog('proxies', 'Starting proxies setup', mergedOptions.verbose)
-
+  // Resolve SSL configuration if HTTPS is enabled
   if (mergedOptions.https) {
-    // Ensure HTTPS config uses the correct domain
-    if (typeof mergedOptions.https === 'boolean') {
-      mergedOptions.https = {
-        caCertPath: `${config.sslPath}/${primaryDomain}.ca.crt`,
-        certPath: `${config.sslPath}/${primaryDomain}.crt`,
-        keyPath: `${config.sslPath}/${primaryDomain}.crt.key`,
-      }
-    }
-
     const existingSSLConfig = await checkExistingCertificates(mergedOptions)
 
     if (existingSSLConfig) {
       debugLog('ssl', `Using existing certificates for ${primaryDomain}`, mergedOptions.verbose)
-      console.log(`Using existing SSL certificates for ${primaryDomain}`)
       mergedOptions._cachedSSLConfig = existingSSLConfig
     }
     else {
-      debugLog('ssl', `No valid existing certificates found for ${primaryDomain}, generating new ones`, mergedOptions.verbose)
-      await generateCertificate({
-        ...mergedOptions as ReverseProxyConfigs,
-        to: primaryDomain,
-        https: mergedOptions.https,
-      })
-      mergedOptions._cachedSSLConfig = await checkExistingCertificates(mergedOptions as ReverseProxyConfigs)
+      debugLog('ssl', `No valid certificates found for ${primaryDomain}, generating new ones`, mergedOptions.verbose)
+      await generateCertificate(mergedOptions)
+
+      // After generation, try to load the certificates again
+      const sslConfig = await checkExistingCertificates(mergedOptions)
+      if (!sslConfig) {
+        throw new Error(`Failed to load SSL certificates after generation for ${primaryDomain}. Please check file permissions and paths.`)
+      }
+
+      mergedOptions._cachedSSLConfig = sslConfig
     }
   }
 
-  // Rest of the function remains the same...
+  // Prepare proxy configurations
   const proxyOptions = isMultiProxyConfig(mergedOptions)
     ? mergedOptions.proxies.map(proxy => ({
       ...proxy,
@@ -552,16 +544,24 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
       verbose: mergedOptions.verbose,
       _cachedSSLConfig: mergedOptions._cachedSSLConfig,
     }))
-    : [mergedOptions]
+    : [{
+        from: mergedOptions.from || 'localhost:5173',
+        to: mergedOptions.to || 'stacks.localhost',
+        https: mergedOptions.https,
+        etcHostsCleanup: mergedOptions.etcHostsCleanup,
+        verbose: mergedOptions.verbose,
+        _cachedSSLConfig: mergedOptions._cachedSSLConfig,
+      }]
 
-  const domains = extractDomains(mergedOptions)
-  const sslConfig = mergedOptions?._cachedSSLConfig
+  // Extract domains for cleanup
+  const domains = proxyOptions.map(opt => opt.to || 'stacks.localhost')
+  const sslConfig = mergedOptions._cachedSSLConfig
 
   // Setup cleanup handler
   const cleanupHandler = () => cleanup({
     domains,
-    etcHostsCleanup: isMultiProxyConfig(mergedOptions) ? mergedOptions.etcHostsCleanup : mergedOptions.etcHostsCleanup || false,
-    verbose: isMultiProxyConfig(mergedOptions) ? mergedOptions.verbose : mergedOptions.verbose || false,
+    etcHostsCleanup: mergedOptions.etcHostsCleanup || false,
+    verbose: mergedOptions.verbose || false,
   })
 
   // Register cleanup handlers
@@ -569,7 +569,7 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
   process.on('SIGTERM', cleanupHandler)
   process.on('uncaughtException', (err) => {
     debugLog('process', `Uncaught exception: ${err}`, true)
-    log.error('Uncaught exception:', err)
+    console.error('Uncaught exception:', err)
     cleanupHandler()
   })
 
@@ -590,12 +590,8 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
     }
     catch (err) {
       debugLog('proxies', `Failed to start proxy for ${option.to}: ${err}`, option.verbose)
-      log.error(`Failed to start proxy for ${option.to}:`, err)
+      console.error(`Failed to start proxy for ${option.to}:`, err)
       cleanupHandler()
     }
   }
-}
-
-function isMultiProxyConfig(options: ReverseProxyConfigs): options is MultiReverseProxyConfig {
-  return 'proxies' in options
 }

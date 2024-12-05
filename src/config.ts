@@ -1,20 +1,23 @@
-import type { ReverseProxyConfig, ReverseProxyOptions } from './types'
-import os from 'node:os'
-import path from 'node:path'
+import type { ReverseProxyConfig } from './types'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { loadConfig } from 'bun-config'
+
+export const defaultConfig: ReverseProxyConfig = {
+  from: 'localhost:5173',
+  to: 'stacks.localhost',
+  https: {
+    basePath: '',
+    caCertPath: join(homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
+    certPath: join(homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
+    keyPath: join(homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
+  },
+  etcHostsCleanup: true,
+  verbose: true,
+}
 
 // eslint-disable-next-line antfu/no-top-level-await
 export const config: ReverseProxyConfig = await loadConfig({
   name: 'reverse-proxy',
-  defaultConfig: {
-    from: 'localhost:5173',
-    to: 'stacks.localhost',
-    https: {
-      caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
-      certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
-      keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
-    },
-    etcHostsCleanup: true,
-    verbose: true,
-  },
+  defaultConfig,
 })
