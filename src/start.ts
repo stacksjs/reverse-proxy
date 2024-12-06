@@ -10,8 +10,8 @@ import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 import { config } from './config'
 import { addHosts, checkHosts, removeHosts } from './hosts'
-import { checkExistingCertificates, generateCertificate, httpsConfig, isMultiProxyConfig, loadSSLConfig, resolveSSLPaths } from './https'
-import { debugLog } from './utils'
+import { checkExistingCertificates, generateCertificate, httpsConfig, loadSSLConfig } from './https'
+import { debugLog, isMultiProxyConfig } from './utils'
 
 // Keep track of all running servers for cleanup
 const activeServers: Set<http.Server | https.Server> = new Set()

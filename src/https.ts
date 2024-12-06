@@ -1,34 +1,13 @@
-import type { MultiReverseProxyConfig, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig, TlsConfig } from './types'
+import type { ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig, TlsConfig } from './types'
 import fs from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { log } from '@stacksjs/cli'
 import { addCertToSystemTrustStoreAndSaveCert, createRootCA, generateCertificate as generateCert } from '@stacksjs/tlsx'
 import { config } from './config'
-import { debugLog, isValidRootCA } from './utils'
+import { debugLog, getPrimaryDomain, isMultiProxyConfig, isMultiProxyOptions, isSingleProxyOptions, isValidRootCA } from './utils'
 
 let cachedSSLConfig: { key: string, cert: string, ca?: string } | null = null
-
-/**
- * Type guard for multi-proxy configuration
- */
-export function isMultiProxyConfig(options: ReverseProxyConfigs): options is MultiReverseProxyConfig {
-  return 'proxies' in options && Array.isArray(options.proxies)
-}
-
-/**
- * Type guard to check if options are for multi-proxy configuration
- */
-export function isMultiProxyOptions(options: ReverseProxyOption | ReverseProxyOptions): options is MultiReverseProxyConfig {
-  return 'proxies' in options && Array.isArray((options as MultiReverseProxyConfig).proxies)
-}
-
-/**
- * Type guard to check if options are for single-proxy configuration
- */
-export function isSingleProxyOptions(options: ReverseProxyOption | ReverseProxyOptions): options is SingleReverseProxyConfig {
-  return 'to' in options && typeof (options as SingleReverseProxyConfig).to === 'string'
-}
 
 /**
  * Resolves SSL paths based on configuration
@@ -90,19 +69,6 @@ export function generateWildcardPatterns(domain: string): string[] {
     patterns.add(`*.${parts.slice(1).join('.')}`)
 
   return Array.from(patterns)
-}
-
-export function getPrimaryDomain(options?: ReverseProxyOption | ReverseProxyOptions): string {
-  if (!options)
-    return 'stacks.localhost'
-
-  if (isMultiProxyOptions(options) && options.proxies.length > 0)
-    return options.proxies[0].to || 'stacks.localhost'
-
-  if (isSingleProxyOptions(options))
-    return options.to || 'stacks.localhost'
-
-  return 'stacks.localhost'
 }
 
 /**
