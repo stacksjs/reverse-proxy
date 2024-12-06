@@ -1,6 +1,19 @@
 # Changelog
 
 
+## v0.4.1...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.4.1...main)
+
+### 🏡 Chore
+
+- Wip ([022f58e](https://github.com/stacksjs/rpx/commit/022f58e))
+- Several improvements ([1e6266c](https://github.com/stacksjs/rpx/commit/1e6266c))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.4.0...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.4.0...main)
