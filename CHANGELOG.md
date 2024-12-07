@@ -1,6 +1,19 @@
 # Changelog
 
 
+## v0.5.0...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.5.0...main)
+
+### 🏡 Chore
+
+- Move some functionality to utils ([5d1effc](https://github.com/stacksjs/rpx/commit/5d1effc))
+- Adjust sudo handling ([dd194be](https://github.com/stacksjs/rpx/commit/dd194be))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.4.1...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.4.1...main)
