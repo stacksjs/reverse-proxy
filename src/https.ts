@@ -194,8 +194,6 @@ export async function generateCertificate(options: ReverseProxyOptions): Promise
 
   // Generate the host certificate with all domains
   const hostConfig = httpsConfig(options, options.verbose)
-  // eslint-disable-next-line no-console
-  console.log('hostConfig', hostConfig)
   log.info(`Generating host certificate for: ${domains.join(', ')}`)
 
   const hostCert = await generateCert({

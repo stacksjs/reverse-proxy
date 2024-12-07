@@ -1,62 +1,29 @@
-import { spawn } from 'node:child_process'
+import { exec, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
+import { promisify } from 'node:util'
 import { log } from '@stacksjs/cli'
 import { debugLog } from './utils'
+
+const execAsync = promisify(exec)
 
 export const hostsFilePath: string = process.platform === 'win32'
   ? path.join(process.env.windir || 'C:\\Windows', 'System32', 'drivers', 'etc', 'hosts')
   : '/etc/hosts'
 
-async function sudoWrite(operation: 'append' | 'write', content: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (process.platform === 'win32') {
-      reject(new Error('Administrator privileges required on Windows'))
-      return
-    }
+// Single function to execute sudo commands
+async function execSudo(command: string): Promise<void> {
+  if (process.platform === 'win32')
+    throw new Error('Administrator privileges required on Windows')
 
-    const tmpFile = path.join(os.tmpdir(), 'hosts.tmp')
-
-    try {
-      if (operation === 'append') {
-        // For append, read current content first
-        const currentContent = fs.readFileSync(hostsFilePath, 'utf8')
-        fs.writeFileSync(tmpFile, currentContent + content, 'utf8')
-      }
-      else {
-        // For write, just write the new content
-        fs.writeFileSync(tmpFile, content, 'utf8')
-      }
-
-      const sudo = spawn('sudo', ['cp', tmpFile, hostsFilePath])
-
-      sudo.on('close', (code) => {
-        try {
-          fs.unlinkSync(tmpFile)
-          if (code === 0)
-            resolve()
-          else
-            reject(new Error(`sudo process exited with code ${code}`))
-        }
-        catch (err) {
-          reject(err)
-        }
-      })
-
-      sudo.on('error', (err) => {
-        try {
-          fs.unlinkSync(tmpFile)
-        }
-        catch { }
-        reject(err)
-      })
-    }
-    catch (err) {
-      reject(err)
-    }
-  })
+  try {
+    await execAsync(`sudo ${command}`)
+  }
+  catch (error) {
+    throw new Error(`Failed to execute sudo command: ${(error as Error).message}`)
+  }
 }
 
 export async function addHosts(hosts: string[], verbose?: boolean): Promise<void> {
@@ -85,40 +52,32 @@ export async function addHosts(hosts: string[], verbose?: boolean): Promise<void
       `\n# Added by rpx\n127.0.0.1 ${host}\n::1 ${host}`,
     ).join('\n')
 
+    const tmpFile = path.join(os.tmpdir(), 'hosts.tmp')
+    await fs.promises.writeFile(tmpFile, existingContent + hostEntries, 'utf8')
+
     try {
-      // Try normal write first
-      await fs.promises.appendFile(hostsFilePath, hostEntries, { flag: 'a' })
+      await execSudo(`cp "${tmpFile}" "${hostsFilePath}"`)
       log.success(`Added new hosts: ${newEntries.join(', ')}`)
     }
-    catch (writeErr) {
-      if ((writeErr as NodeJS.ErrnoException).code === 'EACCES') {
-        debugLog('hosts', 'Permission denied, attempting with sudo', verbose)
-        try {
-          await sudoWrite('append', hostEntries)
-          log.success(`Added new hosts with sudo: ${newEntries.join(', ')}`)
-        }
-        // eslint-disable-next-line unused-imports/no-unused-vars
-        catch (sudoErr) {
-          log.error('Failed to modify hosts file automatically')
-          log.warn('Please add these entries to your hosts file manually:')
-          hostEntries.split('\n').forEach(entry => log.warn(entry))
+    catch (error) {
+      log.error('Failed to modify hosts file automatically')
+      log.warn('Please add these entries to your hosts file manually:')
+      hostEntries.split('\n').forEach(entry => log.warn(entry))
 
-          if (process.platform === 'win32') {
-            log.warn('\nOn Windows:')
-            log.warn('1. Run notepad as administrator')
-            log.warn('2. Open C:\\Windows\\System32\\drivers\\etc\\hosts')
-          }
-          else {
-            log.warn('\nOn Unix systems:')
-            log.warn(`sudo nano ${hostsFilePath}`)
-          }
-
-          throw new Error('Failed to modify hosts file: manual intervention required')
-        }
+      if (process.platform === 'win32') {
+        log.warn('\nOn Windows:')
+        log.warn('1. Run notepad as administrator')
+        log.warn('2. Open C:\\Windows\\System32\\drivers\\etc\\hosts')
       }
       else {
-        throw writeErr
+        log.warn('\nOn Unix systems:')
+        log.warn(`sudo nano ${hostsFilePath}`)
       }
+
+      throw new Error('Failed to modify hosts file: manual intervention required')
+    }
+    finally {
+      fs.unlinkSync(tmpFile)
     }
   }
   catch (err) {
@@ -153,43 +112,36 @@ export async function removeHosts(hosts: string[], verbose?: boolean): Promise<v
     // Ensure file ends with a single newline
     const newContent = `${filteredLines.join('\n')}\n`
 
+    const tmpFile = path.join(os.tmpdir(), 'hosts.tmp')
+    await fs.promises.writeFile(tmpFile, newContent, 'utf8')
+
     try {
-      await fs.promises.writeFile(hostsFilePath, newContent)
+      await execSudo(`cp "${tmpFile}" "${hostsFilePath}"`)
       log.success('Hosts removed successfully')
     }
-    catch (writeErr) {
-      if ((writeErr as NodeJS.ErrnoException).code === 'EACCES') {
-        debugLog('hosts', 'Permission denied, attempting with sudo', verbose)
-        try {
-          await sudoWrite('write', newContent)
-          log.success('Hosts removed successfully with sudo')
-        }
-        // eslint-disable-next-line unused-imports/no-unused-vars
-        catch (sudoErr) {
-          log.error('Failed to modify hosts file automatically')
-          log.warn('Please remove these entries from your hosts file manually:')
-          hosts.forEach((host) => {
-            log.warn('# Added by rpx')
-            log.warn(`127.0.0.1 ${host}`)
-            log.warn(`::1 ${host}`)
-          })
+    catch (error) {
+      log.error('Failed to modify hosts file automatically')
+      log.warn('Please remove these entries from your hosts file manually:')
+      hosts.forEach((host) => {
+        log.warn('# Added by rpx')
+        log.warn(`127.0.0.1 ${host}`)
+        log.warn(`::1 ${host}`)
+      })
 
-          if (process.platform === 'win32') {
-            log.warn('\nOn Windows:')
-            log.warn('1. Run notepad as administrator')
-            log.warn('2. Open C:\\Windows\\System32\\drivers\\etc\\hosts')
-          }
-          else {
-            log.warn('\nOn Unix systems:')
-            log.warn(`sudo nano ${hostsFilePath}`)
-          }
-
-          throw new Error('Failed to modify hosts file: manual intervention required')
-        }
+      if (process.platform === 'win32') {
+        log.warn('\nOn Windows:')
+        log.warn('1. Run notepad as administrator')
+        log.warn('2. Open C:\\Windows\\System32\\drivers\\etc\\hosts')
       }
       else {
-        throw writeErr
+        log.warn('\nOn Unix systems:')
+        log.warn(`sudo nano ${hostsFilePath}`)
       }
+
+      throw new Error('Failed to modify hosts file: manual intervention required')
+    }
+    finally {
+      fs.unlinkSync(tmpFile)
     }
   }
   catch (err) {
@@ -199,7 +151,6 @@ export async function removeHosts(hosts: string[], verbose?: boolean): Promise<v
   }
 }
 
-// Helper function to check if hosts exist
 export async function checkHosts(hosts: string[], verbose?: boolean): Promise<boolean[]> {
   debugLog('hosts', `Checking hosts: ${hosts}`, verbose)
 

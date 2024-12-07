@@ -12,12 +12,12 @@ const config: ReverseProxyOptions = {
   proxies: [
     {
       from: 'localhost:5173',
-      to: 'test.localhost',
-    },
-    {
-      from: 'localhost:5174',
       to: 'test.local',
     },
+    // {
+    //   from: 'localhost:5174',
+    //   to: 'test.local',
+    // },
   ],
   verbose: false,
 }

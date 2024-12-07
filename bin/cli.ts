@@ -31,7 +31,6 @@ cli
   .example('reverse-proxy start --from localhost:5173 --to my-project.test --key-path /absolute/path/to/key --cert-path /absolute/path/to/cert')
   .action(async (options?: ReverseProxyOption) => {
     if (!options?.from || !options.to) {
-      console.log('in here', config)
       return startProxies(config)
     }
 
