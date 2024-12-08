@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v0.5.1...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.5.1...main)
+
+### 🚀 Enhancements
+
+- Add cleanUrls option ([52ab5f8](https://github.com/stacksjs/rpx/commit/52ab5f8))
+
+### 🏡 Chore
+
+- Add eslint comments ([cd13a99](https://github.com/stacksjs/rpx/commit/cd13a99))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.5.0...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.5.0...main)
