@@ -6,6 +6,7 @@ import { loadConfig } from 'bun-config'
 export const defaultConfig: ReverseProxyConfig = {
   from: 'localhost:5173',
   to: 'stacks.localhost',
+  cleanUrls: false,
   https: {
     basePath: '',
     caCertPath: join(homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),

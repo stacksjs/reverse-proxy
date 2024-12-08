@@ -3,6 +3,7 @@ import type { TlsConfig, TlsOption } from '@stacksjs/tlsx'
 export interface BaseReverseProxyConfig {
   from: string // localhost:5173
   to: string // stacks.localhost
+  cleanUrls: boolean // false
 }
 export type BaseReverseProxyOptions = Partial<BaseReverseProxyConfig>
 

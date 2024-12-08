@@ -1,18 +1,18 @@
 import type { ReverseProxyOptions } from './src/types'
-import os from 'node:os'
-import path from 'node:path'
 
 const config: ReverseProxyOptions = {
-  https: {
-    caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
-    certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
-    keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
-  },
+  // https: {
+  //   caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
+  //   certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
+  //   keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
+  // },
+  https: true,
   etcHostsCleanup: true,
   proxies: [
     {
       from: 'localhost:5173',
-      to: 'test.local',
+      to: 'docs.localhost',
+      cleanUrls: true,
     },
     // {
     //   from: 'localhost:5174',

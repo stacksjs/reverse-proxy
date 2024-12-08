@@ -286,16 +286,34 @@ async function createProxyServer(
   sourceUrl: Pick<URL, 'hostname' | 'host'>,
   ssl: SSLConfig | null,
   verbose?: boolean,
+  cleanUrls?: boolean,
 ): Promise<void> {
-  debugLog('proxy', `Creating proxy server ${from} -> ${to}`, verbose)
+  debugLog('proxy', `Creating proxy server ${from} -> ${to} with cleanUrls: ${cleanUrls}`, verbose)
 
   const requestHandler = (req: http.IncomingMessage, res: http.ServerResponse) => {
     debugLog('request', `Incoming request: ${req.method} ${req.url}`, verbose)
 
+    let path = req.url || '/'
+
+    // Handle clean URLs
+    if (cleanUrls) {
+      // Don't modify URLs that already have an extension
+      if (!path.match(/\.[a-z0-9]+$/i)) {
+        // If path ends with trailing slash, look for index.html
+        if (path.endsWith('/')) {
+          path = `${path}index.html`
+        }
+        // Otherwise append .html
+        else {
+          path = `${path}.html`
+        }
+      }
+    }
+
     const proxyOptions = {
       hostname: sourceUrl.hostname,
       port: fromPort,
-      path: req.url,
+      path,
       method: req.method,
       headers: {
         ...req.headers,
@@ -307,6 +325,62 @@ async function createProxyServer(
 
     const proxyReq = http.request(proxyOptions, (proxyRes) => {
       debugLog('response', `Proxy response received with status ${proxyRes.statusCode}`, verbose)
+
+      // Handle 404s for clean URLs
+      if (cleanUrls && proxyRes.statusCode === 404) {
+        // Try alternative paths for clean URLs
+        const alternativePaths = []
+
+        // If the path ends with .html, try without it
+        if (path.endsWith('.html')) {
+          alternativePaths.push(path.slice(0, -5))
+        }
+        // If path doesn't end with .html, try with it
+        else if (!path.match(/\.[a-z0-9]+$/i)) {
+          alternativePaths.push(`${path}.html`)
+        }
+        // If path doesn't end with /, try with /index.html
+        if (!path.endsWith('/')) {
+          alternativePaths.push(`${path}/index.html`)
+        }
+
+        // Try alternative paths
+        if (alternativePaths.length > 0) {
+          debugLog('cleanUrls', `Trying alternative paths: ${alternativePaths.join(', ')}`, verbose)
+
+          // Try each alternative path
+          const tryNextPath = (paths: string[]) => {
+            if (paths.length === 0) {
+              // If no alternatives work, send original 404
+              res.writeHead(proxyRes.statusCode || 404, proxyRes.headers)
+              proxyRes.pipe(res)
+              return
+            }
+
+            const altPath = paths[0]
+            const altOptions = { ...proxyOptions, path: altPath }
+
+            const altReq = http.request(altOptions, (altRes) => {
+              if (altRes.statusCode === 200) {
+                // If we found a matching path, use it
+                debugLog('cleanUrls', `Found matching path: ${altPath}`, verbose)
+                res.writeHead(altRes.statusCode, altRes.headers)
+                altRes.pipe(res)
+              }
+              else {
+                // Try next alternative
+                tryNextPath(paths.slice(1))
+              }
+            })
+
+            altReq.on('error', () => tryNextPath(paths.slice(1)))
+            altReq.end()
+          }
+
+          tryNextPath(alternativePaths)
+          return
+        }
+      }
 
       // Add security headers
       const headers = {
@@ -329,7 +403,7 @@ async function createProxyServer(
     req.pipe(proxyReq)
   }
 
-  // Complete SSL configuration
+  // SSL configuration
   const serverOptions: (ServerOptions & SecureServerOptions) | undefined = ssl
     ? {
         key: ssl.key,
@@ -388,6 +462,9 @@ async function createProxyServer(
         console.log(`     - Modern cipher suite`)
         console.log(`     - HTTP/2 enabled`)
         console.log(`     - HSTS enabled`)
+      }
+      if (cleanUrls) {
+        console.log(`  ${green('➜')}  Clean URLs enabled`)
       }
 
       resolve()
@@ -482,6 +559,7 @@ export function startProxy(options: ReverseProxyOption): void {
   const serverOptions: SingleReverseProxyConfig = {
     from: mergedOptions.from,
     to: mergedOptions.to,
+    cleanUrls: mergedOptions.cleanUrls,
     https: httpsConfig(mergedOptions),
     etcHostsCleanup: mergedOptions.etcHostsCleanup,
     verbose: mergedOptions.verbose,
@@ -541,12 +619,14 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
       ...proxy,
       https: mergedOptions.https,
       etcHostsCleanup: mergedOptions.etcHostsCleanup,
+      cleanUrls: mergedOptions.cleanUrls,
       verbose: mergedOptions.verbose,
       _cachedSSLConfig: mergedOptions._cachedSSLConfig,
     }))
     : [{
         from: mergedOptions.from || 'localhost:5173',
         to: mergedOptions.to || 'stacks.localhost',
+        cleanUrls: mergedOptions.cleanUrls || false,
         https: mergedOptions.https,
         etcHostsCleanup: mergedOptions.etcHostsCleanup,
         verbose: mergedOptions.verbose,
@@ -582,7 +662,8 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
       await startServer({
         from: option.from || 'localhost:5173',
         to: domain,
-        https: option.https ?? false,
+        cleanUrls: option.cleanUrls || false,
+        https: option.https || false,
         etcHostsCleanup: option.etcHostsCleanup || false,
         verbose: option.verbose || false,
         _cachedSSLConfig: sslConfig,
