@@ -1,4 +1,4 @@
-import { exec, spawn } from 'node:child_process'
+import { exec } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -59,6 +59,7 @@ export async function addHosts(hosts: string[], verbose?: boolean): Promise<void
       await execSudo(`cp "${tmpFile}" "${hostsFilePath}"`)
       log.success(`Added new hosts: ${newEntries.join(', ')}`)
     }
+    // eslint-disable-next-line unused-imports/no-unused-vars
     catch (error) {
       log.error('Failed to modify hosts file automatically')
       log.warn('Please add these entries to your hosts file manually:')
@@ -119,6 +120,7 @@ export async function removeHosts(hosts: string[], verbose?: boolean): Promise<v
       await execSudo(`cp "${tmpFile}" "${hostsFilePath}"`)
       log.success('Hosts removed successfully')
     }
+    // eslint-disable-next-line unused-imports/no-unused-vars
     catch (error) {
       log.error('Failed to modify hosts file automatically')
       log.warn('Please remove these entries from your hosts file manually:')
