@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.6.4...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.6.4...main)
+
+### 🏡 Chore
+
+- Update tlsx ([b5f1fc8](https://github.com/stacksjs/rpx/commit/b5f1fc8))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.6.3...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.6.3...main)
