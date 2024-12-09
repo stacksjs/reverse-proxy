@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.6.3...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.6.3...main)
+
+### 🏡 Chore
+
+- Remove ununsed import ([3facd5f](https://github.com/stacksjs/rpx/commit/3facd5f))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.6.2...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.6.2...main)
