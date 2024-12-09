@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.6.2...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.6.2...main)
+
+### 🩹 Fixes
+
+- Paths after splitting ([bb64b43](https://github.com/stacksjs/rpx/commit/bb64b43))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.6.1...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.6.1...main)
