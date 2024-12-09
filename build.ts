@@ -1,4 +1,3 @@
-import { $ } from 'bun'
 import { log } from '@stacksjs/cli'
 import { dts } from 'bun-plugin-dtsx'
 
