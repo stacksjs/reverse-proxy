@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.6.1...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.6.1...main)
+
+### 🏡 Chore
+
+- Add splitting to build ([e74cdaf](https://github.com/stacksjs/rpx/commit/e74cdaf))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.6.0...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.6.0...main)
