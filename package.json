@@ -5,7 +5,7 @@
   "description": "A modern reverse proxy.",
   "author": "Chris Breuer <chris@stacksjs.org>",
   "license": "MIT",
-  "homepage": "https://github.com/stacksjs/rpx#readme",
+  "homepage": "https://github.com/stacksjs/rpx",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/stacksjs/rpx.git"
@@ -56,9 +56,9 @@
     "release": "bun run changelog && bunx bumpp package.json --all",
     "test": "bun test",
     "typecheck": "bunx tsc --noEmit",
-    "dev:docs": "vitepress dev docs",
-    "build:docs": "vitepress build docs",
-    "preview:docs": "vitepress preview docs"
+    "dev:docs": "bun --bun vitepress dev docs",
+    "build:docs": "bun --bun vitepress build docs",
+    "preview:docs": "bun --bun vitepress preview docs"
   },
   "dependencies": {
     "@stacksjs/tlsx": "^0.8.3"
