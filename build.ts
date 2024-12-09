@@ -9,6 +9,7 @@ await Bun.build({
   outdir: './dist',
   format: 'esm',
   target: 'bun',
+  minify: true,
   external: ['rollup', 'fsevents'],
   plugins: [dts()],
 })
