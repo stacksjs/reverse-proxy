@@ -26,17 +26,14 @@
   ],
   "exports": {
     ".": {
-      "import": "./dist/index.js"
-    },
-    "./*": {
-      "import": "./dist/*"
+      "import": "./dist/src/index.js"
     }
   },
-  "module": "./dist/index.js",
+  "module": "./dist/src/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "rpx": "./dist/cli.js",
-    "reverse-proxy": "./dist/cli.js"
+    "rpx": "./dist/bin/cli.js",
+    "reverse-proxy": "./dist/bin/cli.js"
   },
   "files": ["README.md", "dist"],
   "scripts": {

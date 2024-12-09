@@ -11,13 +11,7 @@ await Bun.build({
   target: 'bun',
   minify: true,
   splitting: true,
-  external: ['rollup', 'fsevents'],
   plugins: [dts()],
 })
-
-await $`cp ./dist/src/index.js ./dist/index.js`
-await $`cp ./dist/bin/cli.js ./dist/cli.js`
-await $`rm -rf ./dist/src`
-await $`rm -rf ./dist/bin`
 
 log.success('Built')
