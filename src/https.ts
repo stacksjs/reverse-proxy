@@ -29,8 +29,8 @@ export function resolveSSLPaths(options: ReverseProxyConfigs, defaultConfig: typ
       })
 
       // Filter out undefined values from arrays
-      const altNameIPs = options.https.altNameIPs?.filter((ip): ip is string => ip !== undefined) || baseConfig.altNameIPs
-      const altNameURIs = options.https.altNameURIs?.filter((uri): uri is string => uri !== undefined) || baseConfig.altNameURIs
+      const altNameIPs = options.https.altNameIPs?.filter((ip: any): ip is string => ip !== undefined) || baseConfig.altNameIPs
+      const altNameURIs = options.https.altNameURIs?.filter((uri: any): uri is string => uri !== undefined) || baseConfig.altNameURIs
 
       // Override with provided paths
       return {

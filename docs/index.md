@@ -4,21 +4,27 @@ layout: home
 
 hero:
   name: "Reverse Proxy"
-  text: "A better developer environment."
-  tagline: My great project tagline
+  text: "Modern, fast reverse proxy."
+  tagline: "For a better local development environment."
   actions:
     - theme: brand
-      text: Markdown Examples
-      link: /markdown-examples
+      text: Documentation
+      link: /intro
     - theme: alt
-      text: API Examples
-      link: /api-examples
+      text: View on GitHub
+      link: https://github.com/stacksjs/rpx
 
 features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+  - title: "Smart Reverse Proxy"
+    icon: "🔀"
+    details: "Pretty development URLs for your local environment."
+  - title: "HTTPS Support"
+    icon: "🔒"
+    details: "Automatic, and configurable, HTTPS support."
+  - title: "`/etc/hosts` Management"
+    icon: "📝"
+    details: "Self-cleans your `/etc/hosts` file."
+  - title: "CLI & Library"
+    icon: "🛠"
+    details: "Use the CLI or the library in your own project."
 ---

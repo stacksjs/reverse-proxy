@@ -1,6 +1,5 @@
 import { defineConfig } from 'vitepress'
 
-// https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: 'Reverse Proxy',
   description: 'A better developer environment.',
@@ -8,20 +7,24 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Examples', link: '/markdown-examples' },
+      { text: 'Docs', link: '/intro' },
+      { text: 'Install', link: '/install' },
     ],
 
     sidebar: [
       {
-        text: 'Examples',
+        text: 'Get Started',
         items: [
-          { text: 'Markdown Examples', link: '/markdown-examples' },
-          { text: 'Runtime API Examples', link: '/api-examples' },
+          { text: 'Introduction', link: '/intro' },
+          { text: 'Install', link: '/install' },
         ],
       },
     ],
 
-    socialLinks: [{ icon: 'github', link: 'https://github.com/vuejs/vitepress' }],
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/stacksjs/rpx' },
+      { icon: 'bluesky', link: 'https://bsky.app/profile/chrisbreuer.dev' },
+      { icon: 'twitter', link: 'https://twitter.com/stacksjs' },
+    ],
   },
 })
