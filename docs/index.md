@@ -3,9 +3,9 @@
 layout: home
 
 hero:
-  name: "Reverse Proxy"
-  text: "Modern, fast reverse proxy."
-  tagline: "For a better local development environment."
+  name: "rpx"
+  text: "For a better local environment."
+  tagline: "Modern and smart reverse proxy."
   actions:
     - theme: brand
       text: Documentation
