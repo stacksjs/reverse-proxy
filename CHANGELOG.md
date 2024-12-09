@@ -1,6 +1,20 @@
 # Changelog
 
 
+## v0.6.0...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.6.0...main)
+
+### 🏡 Chore
+
+- Update readme examples ([4284e7e](https://github.com/stacksjs/rpx/commit/4284e7e))
+- Minify build ([a00f9e6](https://github.com/stacksjs/rpx/commit/a00f9e6))
+- Add bun options ([96bbef6](https://github.com/stacksjs/rpx/commit/96bbef6))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.5.1...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.5.1...main)
