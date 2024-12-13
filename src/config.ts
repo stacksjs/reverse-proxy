@@ -14,6 +14,7 @@ export const defaultConfig: ReverseProxyConfig = {
     keyPath: join(homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
   },
   etcHostsCleanup: true,
+  vitePluginUsage: false,
   verbose: true,
 }
 

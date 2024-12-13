@@ -16,6 +16,7 @@ export interface CleanupOptions {
 export interface SharedProxyConfig {
   https: boolean | TlsOption
   etcHostsCleanup: boolean
+  vitePluginUsage: boolean
   verbose: boolean
   _cachedSSLConfig?: SSLConfig | null
 }

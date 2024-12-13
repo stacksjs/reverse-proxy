@@ -285,6 +285,7 @@ async function createProxyServer(
   hostname: string,
   sourceUrl: Pick<URL, 'hostname' | 'host'>,
   ssl: SSLConfig | null,
+  vitePluginUsage?: boolean,
   verbose?: boolean,
   cleanUrls?: boolean,
 ): Promise<void> {
@@ -450,21 +451,23 @@ async function createProxyServer(
     server.listen(listenPort, hostname, () => {
       debugLog('server', `Server listening on port ${listenPort}`, verbose)
 
-      console.log('')
-      console.log(`  ${green(bold('reverse-proxy'))} ${green(`v${version}`)}`)
-      console.log('')
-      console.log(`  ${green('➜')}  ${dim(from)} ${dim('➜')} ${ssl ? 'https' : 'http'}://${to}`)
-      if (listenPort !== (ssl ? 443 : 80))
-        console.log(`  ${green('➜')}  Listening on port ${listenPort}`)
-      if (ssl) {
-        console.log(`  ${green('➜')}  SSL enabled with:`)
-        console.log(`     - TLS 1.2/1.3`)
-        console.log(`     - Modern cipher suite`)
-        console.log(`     - HTTP/2 enabled`)
-        console.log(`     - HSTS enabled`)
-      }
-      if (cleanUrls) {
-        console.log(`  ${green('➜')}  Clean URLs enabled`)
+      if (!vitePluginUsage) {
+        console.log('')
+        console.log(`  ${green(bold('reverse-proxy'))} ${green(`v${version}`)}`)
+        console.log('')
+        console.log(`  ${green('➜')}  ${dim(from)} ${dim('➜')} ${ssl ? 'https' : 'http'}://${to}`)
+        if (listenPort !== (ssl ? 443 : 80))
+          console.log(`  ${green('➜')}  Listening on port ${listenPort}`)
+        if (ssl) {
+          console.log(`  ${green('➜')}  SSL enabled with:`)
+          console.log(`     - TLS 1.2/1.3`)
+          console.log(`     - Modern cipher suite`)
+          console.log(`     - HTTP/2 enabled`)
+          console.log(`     - HSTS enabled`)
+        }
+        if (cleanUrls) {
+          console.log(`  ${green('➜')}  Clean URLs enabled`)
+        }
       }
 
       resolve()
@@ -562,6 +565,7 @@ export function startProxy(options: ReverseProxyOption): void {
     cleanUrls: mergedOptions.cleanUrls,
     https: httpsConfig(mergedOptions),
     etcHostsCleanup: mergedOptions.etcHostsCleanup,
+    vitePluginUsage: mergedOptions.vitePluginUsage,
     verbose: mergedOptions.verbose,
   }
 
@@ -620,6 +624,7 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
       https: mergedOptions.https,
       etcHostsCleanup: mergedOptions.etcHostsCleanup,
       cleanUrls: mergedOptions.cleanUrls,
+      vitePluginUsage: mergedOptions.vitePluginUsage,
       verbose: mergedOptions.verbose,
       _cachedSSLConfig: mergedOptions._cachedSSLConfig,
     }))
@@ -629,6 +634,7 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
         cleanUrls: mergedOptions.cleanUrls || false,
         https: mergedOptions.https,
         etcHostsCleanup: mergedOptions.etcHostsCleanup,
+        vitePluginUsage: mergedOptions.vitePluginUsage,
         verbose: mergedOptions.verbose,
         _cachedSSLConfig: mergedOptions._cachedSSLConfig,
       }]
@@ -665,6 +671,7 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
         cleanUrls: option.cleanUrls || false,
         https: option.https || false,
         etcHostsCleanup: option.etcHostsCleanup || false,
+        vitePluginUsage: option.vitePluginUsage || false,
         verbose: option.verbose || false,
         _cachedSSLConfig: sslConfig,
       })
