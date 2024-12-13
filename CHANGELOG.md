@@ -1,6 +1,25 @@
 # Changelog
 
 
+## v0.6.5...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.6.5...main)
+
+### 🚀 Enhancements
+
+- Allow for vite plugin usage ([64d7852](https://github.com/stacksjs/rpx/commit/64d7852))
+
+### 🏡 Chore
+
+- Docs updates ([5672ee8](https://github.com/stacksjs/rpx/commit/5672ee8))
+- Docs updates ([79ce3c6](https://github.com/stacksjs/rpx/commit/79ce3c6))
+- Add default docs theme ([eadc187](https://github.com/stacksjs/rpx/commit/eadc187))
+- Wip ([a8566e0](https://github.com/stacksjs/rpx/commit/a8566e0))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.6.4...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.6.4...main)
