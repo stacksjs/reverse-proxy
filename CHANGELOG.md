@@ -1,6 +1,22 @@
 # Changelog
 
 
+## v0.7.1...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.7.1...main)
+
+### 🚀 Enhancements
+
+- Allow for cleaning up certificates ([a22b7d7](https://github.com/stacksjs/rpx/commit/a22b7d7))
+
+### 🏡 Chore
+
+- Update bun ([434a163](https://github.com/stacksjs/rpx/commit/434a163))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.7.0...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.7.0...main)
