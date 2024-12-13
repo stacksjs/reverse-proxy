@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { log } from '@stacksjs/cli'
 import { addCertToSystemTrustStoreAndSaveCert, createRootCA, generateCertificate as generateCert } from '@stacksjs/tlsx'
 import { config } from './config'
-import { debugLog, getPrimaryDomain, isMultiProxyConfig, isMultiProxyOptions, isSingleProxyOptions, isValidRootCA } from './utils'
+import { debugLog, getPrimaryDomain, isMultiProxyConfig, isMultiProxyOptions, isSingleProxyOptions, isValidRootCA, safeDeleteFile } from './utils'
 
 let cachedSSLConfig: { key: string, cert: string, ca?: string } | null = null
 
@@ -313,4 +313,23 @@ export function httpsConfig(options: ReverseProxyOption | ReverseProxyOptions, v
       value: domain,
     })),
   }
+}
+
+/**
+ * Clean up SSL certificates for a specific domain
+ */
+export async function cleanupCertificates(domain: string, verbose?: boolean): Promise<void> {
+  const certPaths = generateSSLPaths({ to: domain, verbose })
+
+  // Define all possible certificate files
+  const filesToDelete = [
+    certPaths.caCertPath,
+    certPaths.certPath,
+    certPaths.keyPath,
+  ]
+
+  debugLog('certificates', `Attempting to clean up relating certificates`, verbose)
+
+  // Delete all files concurrently
+  await Promise.all(filesToDelete.map(file => safeDeleteFile(file, verbose)))
 }

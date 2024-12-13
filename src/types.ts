@@ -7,15 +7,18 @@ export interface BaseReverseProxyConfig {
 }
 export type BaseReverseProxyOptions = Partial<BaseReverseProxyConfig>
 
-export interface CleanupOptions {
-  domains?: string[]
-  etcHostsCleanup?: boolean
-  verbose?: boolean
+export interface CleanupConfig {
+  domains: string[] // default: [], if only specific domain/s should be cleaned up
+  hosts: boolean // default: true, if hosts file should be cleaned up
+  certs: boolean // default: false, if certificates should be cleaned up
+  verbose: boolean // default: false
 }
+
+export type CleanupOptions = Partial<CleanupConfig>
 
 export interface SharedProxyConfig {
   https: boolean | TlsOption
-  etcHostsCleanup: boolean
+  cleanup: boolean | CleanupOptions
   vitePluginUsage: boolean
   verbose: boolean
   _cachedSSLConfig?: SSLConfig | null

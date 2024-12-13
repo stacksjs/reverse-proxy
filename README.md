@@ -44,12 +44,17 @@ Given the npm package is installed:
 import type { TlsConfig } from '@stacksjs/rpx'
 import { startProxy } from '@stacksjs/rpx'
 
+export interface CleanupConfig {
+  hosts: boolean // clean up /etc/hosts, defaults to false
+  certs: boolean // clean up certificates, defaults to false
+}
+
 export interface ReverseProxyConfig {
   from: string // domain to proxy from, defaults to localhost:3000
   to: string // domain to proxy to, defaults to stacks.localhost
   cleanUrls?: boolean // removes the .html extension from URLs, defaults to false
   https: boolean | TlsConfig // automatically uses https, defaults to true, also redirects http to https
-  etcHostsCleanup?: boolean // automatically cleans up /etc/hosts, defaults to false
+  cleanup?: boolean | CleanupConfig // automatically cleans up /etc/hosts, defaults to false
   verbose: boolean // log verbose output, defaults to false
 }
 
@@ -58,7 +63,7 @@ const config: ReverseProxyOptions = {
   to: 'my-docs.localhost',
   cleanUrls: true,
   https: true,
-  etcHostsCleanup: true,
+  cleanup: false,
 }
 
 startProxy(config)
@@ -79,7 +84,10 @@ const config: ReverseProxyOptions = {
     keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
   },
 
-  etcHostsCleanup: true,
+  cleanup: {
+    hosts: true,
+    certs: false,
+  },
 
   proxies: [
     {
@@ -121,6 +129,7 @@ import path from 'node:path'
 const config: ReverseProxyOptions = {
   from: 'localhost:5173',
   to: 'stacks.localhost',
+
   https: {
     domain: 'stacks.localhost',
     hostCertCN: 'stacks.localhost',
@@ -137,6 +146,7 @@ const config: ReverseProxyOptions = {
     validityDays: 180,
     verbose: false,
   },
+
   verbose: false,
 }
 

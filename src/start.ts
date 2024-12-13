@@ -10,14 +10,14 @@ import { bold, dim, green, log } from '@stacksjs/cli'
 import { version } from '../package.json'
 import { config } from './config'
 import { addHosts, checkHosts, removeHosts } from './hosts'
-import { checkExistingCertificates, generateCertificate, httpsConfig, loadSSLConfig } from './https'
+import { checkExistingCertificates, cleanupCertificates, generateCertificate, httpsConfig, loadSSLConfig } from './https'
 import { debugLog, isMultiProxyConfig } from './utils'
 
 // Keep track of all running servers for cleanup
 const activeServers: Set<http.Server | https.Server> = new Set()
 
 /**
- * Cleanup function to close all servers and cleanup hosts file if configured
+ * Cleanup function to close all servers, cleanup hosts file, and remove certificates if configured
  */
 export async function cleanup(options?: CleanupOptions): Promise<void> {
   debugLog('cleanup', 'Starting cleanup process', options?.verbose)
@@ -38,8 +38,8 @@ export async function cleanup(options?: CleanupOptions): Promise<void> {
   )
   cleanupPromises.push(...serverClosePromises)
 
-  // Add hosts file cleanup if configured
-  if (options?.etcHostsCleanup && options.domains?.length) {
+  // hosts file cleanup if configured
+  if (options?.hosts && options.domains?.length) {
     debugLog('cleanup', 'Cleaning up hosts file entries', options?.verbose)
 
     const domainsToClean = options.domains.filter(domain => !domain.includes('localhost'))
@@ -57,6 +57,26 @@ export async function cleanup(options?: CleanupOptions): Promise<void> {
           }),
       )
     }
+  }
+
+  // certificate cleanup if configured
+  if (options?.certs && options.domains?.length) {
+    debugLog('cleanup', 'Cleaning up SSL certificates', options?.verbose)
+    log.info('Cleaning up SSL certificates...')
+
+    const certCleanupPromises = options.domains.map(async (domain) => {
+      try {
+        await cleanupCertificates(domain, options?.verbose)
+        debugLog('cleanup', `Removed certificates for ${domain}`, options?.verbose)
+      }
+      catch (err) {
+        console.log('checkError', err)
+        debugLog('cleanup', `Failed to remove certificates for ${domain}: ${err}`, options?.verbose)
+        log.warn(`Failed to clean up certificates for ${domain}:`, err)
+      }
+    })
+
+    cleanupPromises.push(...certCleanupPromises)
   }
 
   try {
@@ -483,7 +503,7 @@ async function createProxyServer(
 export async function setupReverseProxy(options: ProxySetupOptions): Promise<void> {
   debugLog('setup', `Setting up reverse proxy: ${JSON.stringify(options)}`, options.verbose)
 
-  const { from, to, fromPort, sourceUrl, ssl, verbose, etcHostsCleanup, vitePluginUsage, portManager } = options
+  const { from, to, fromPort, sourceUrl, ssl, verbose, cleanup: cleanupOptions, vitePluginUsage, portManager } = options
   const httpPort = 80
   const httpsPort = 443
   const hostname = '0.0.0.0'
@@ -528,7 +548,8 @@ export async function setupReverseProxy(options: ProxySetupOptions): Promise<voi
     log.error(`Failed to setup reverse proxy: ${(err as Error).message}`)
     cleanup({
       domains: [to],
-      etcHostsCleanup,
+      hosts: typeof cleanupOptions === 'boolean' ? cleanupOptions : cleanupOptions?.hosts,
+      certs: typeof cleanupOptions === 'boolean' ? cleanupOptions : cleanupOptions?.certs,
       verbose,
     })
   }
@@ -564,7 +585,7 @@ export function startProxy(options: ReverseProxyOption): void {
     to: mergedOptions.to,
     cleanUrls: mergedOptions.cleanUrls,
     https: httpsConfig(mergedOptions),
-    etcHostsCleanup: mergedOptions.etcHostsCleanup,
+    cleanup: mergedOptions.cleanup,
     vitePluginUsage: mergedOptions.vitePluginUsage,
     verbose: mergedOptions.verbose,
   }
@@ -576,7 +597,8 @@ export function startProxy(options: ReverseProxyOption): void {
     log.error(`Failed to start proxy: ${err.message}`)
     cleanup({
       domains: [mergedOptions.to],
-      etcHostsCleanup: mergedOptions.etcHostsCleanup,
+      hosts: typeof mergedOptions.cleanup === 'boolean' ? mergedOptions.cleanup : mergedOptions.cleanup?.hosts,
+      certs: typeof mergedOptions.cleanup === 'boolean' ? mergedOptions.cleanup : mergedOptions.cleanup?.certs,
       verbose: mergedOptions.verbose,
     })
   })
@@ -622,7 +644,7 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
     ? mergedOptions.proxies.map(proxy => ({
       ...proxy,
       https: mergedOptions.https,
-      etcHostsCleanup: mergedOptions.etcHostsCleanup,
+      cleanup: mergedOptions.cleanup,
       cleanUrls: mergedOptions.cleanUrls,
       vitePluginUsage: mergedOptions.vitePluginUsage,
       verbose: mergedOptions.verbose,
@@ -633,7 +655,7 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
         to: mergedOptions.to || 'stacks.localhost',
         cleanUrls: mergedOptions.cleanUrls || false,
         https: mergedOptions.https,
-        etcHostsCleanup: mergedOptions.etcHostsCleanup,
+        cleanup: mergedOptions.cleanup,
         vitePluginUsage: mergedOptions.vitePluginUsage,
         verbose: mergedOptions.verbose,
         _cachedSSLConfig: mergedOptions._cachedSSLConfig,
@@ -646,7 +668,8 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
   // Setup cleanup handler
   const cleanupHandler = () => cleanup({
     domains,
-    etcHostsCleanup: mergedOptions.etcHostsCleanup || false,
+    hosts: typeof mergedOptions.cleanup === 'boolean' ? mergedOptions.cleanup : mergedOptions.cleanup?.hosts,
+    certs: typeof mergedOptions.cleanup === 'boolean' ? mergedOptions.cleanup : mergedOptions.cleanup?.certs,
     verbose: mergedOptions.verbose || false,
   })
 
@@ -670,7 +693,7 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
         to: domain,
         cleanUrls: option.cleanUrls || false,
         https: option.https || false,
-        etcHostsCleanup: option.etcHostsCleanup || false,
+        cleanup: option.cleanup || false,
         vitePluginUsage: option.vitePluginUsage || false,
         verbose: option.verbose || false,
         _cachedSSLConfig: sslConfig,

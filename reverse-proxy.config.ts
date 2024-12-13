@@ -7,19 +7,26 @@ const config: ReverseProxyOptions = {
   //   keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
   // },
   https: true,
-  etcHostsCleanup: true,
+
+  cleanup: {
+    hosts: true,
+    certs: false,
+  },
+
   proxies: [
     {
       from: 'localhost:5173',
       to: 'docs.localhost',
       cleanUrls: true,
     },
+
     // {
     //   from: 'localhost:5174',
     //   to: 'test.local',
     // },
   ],
-  vitePluginUsage: true,
+
+  vitePluginUsage: false,
   verbose: false,
 }
 

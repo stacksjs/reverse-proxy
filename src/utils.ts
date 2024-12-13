@@ -1,4 +1,5 @@
 import type { MultiReverseProxyConfig, ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig } from './types'
+import * as fs from 'node:fs/promises'
 
 export function debugLog(category: string, message: string, verbose?: boolean): void {
   if (verbose) {
@@ -74,4 +75,21 @@ export function isMultiProxyOptions(options: ReverseProxyOption | ReverseProxyOp
  */
 export function isSingleProxyOptions(options: ReverseProxyOption | ReverseProxyOptions): options is SingleReverseProxyConfig {
   return 'to' in options && typeof (options as SingleReverseProxyConfig).to === 'string'
+}
+
+/**
+ * Safely delete a file if it exists
+ */
+export async function safeDeleteFile(filePath: string, verbose?: boolean): Promise<void> {
+  try {
+    // Try to delete the file directly without checking existence first
+    await fs.unlink(filePath)
+    debugLog('certificates', `Successfully deleted: ${filePath}`, verbose)
+  }
+  catch (err) {
+    // Ignore errors where file doesn't exist
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+      debugLog('certificates', `Warning: Could not delete ${filePath}: ${err}`, verbose)
+    }
+  }
 }
