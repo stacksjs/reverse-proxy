@@ -1,6 +1,18 @@
 # Changelog
 
 
+## v0.7.0...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.7.0...main)
+
+### 🩹 Fixes
+
+- Properly pass vitePluginUsage ([f5b520b](https://github.com/stacksjs/rpx/commit/f5b520b))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.6.5...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.6.5...main)
