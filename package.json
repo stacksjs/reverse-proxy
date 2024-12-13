@@ -62,7 +62,7 @@
   },
   "devDependencies": {
     "@stacksjs/cli": "^0.68.2",
-    "@stacksjs/eslint-config": "^3.8.1-beta.2",
+    "@stacksjs/eslint-config": "^3.11.3-beta.4",
     "@stacksjs/storage": "^0.68.2",
     "@types/bun": "^1.1.14",
     "bun-config": "^0.3.2",
