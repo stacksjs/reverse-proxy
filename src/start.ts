@@ -483,7 +483,7 @@ async function createProxyServer(
 export async function setupReverseProxy(options: ProxySetupOptions): Promise<void> {
   debugLog('setup', `Setting up reverse proxy: ${JSON.stringify(options)}`, options.verbose)
 
-  const { from, to, fromPort, sourceUrl, ssl, verbose, etcHostsCleanup, portManager } = options
+  const { from, to, fromPort, sourceUrl, ssl, verbose, etcHostsCleanup, vitePluginUsage, portManager } = options
   const httpPort = 80
   const httpsPort = 443
   const hostname = '0.0.0.0'
@@ -521,7 +521,7 @@ export async function setupReverseProxy(options: ProxySetupOptions): Promise<voi
       log.info(`You can use 'sudo lsof -i :${targetPort}' (Unix) or 'netstat -ano | findstr :${targetPort}' (Windows) to check what's using the port.`)
     }
 
-    await createProxyServer(from, to, fromPort, finalPort, hostname, sourceUrl, ssl, verbose)
+    await createProxyServer(from, to, fromPort, finalPort, hostname, sourceUrl, ssl, vitePluginUsage, verbose)
   }
   catch (err) {
     debugLog('setup', `Setup failed: ${err}`, verbose)

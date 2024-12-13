@@ -19,6 +19,7 @@ const config: ReverseProxyOptions = {
     //   to: 'test.local',
     // },
   ],
+  vitePluginUsage: true,
   verbose: false,
 }
 
