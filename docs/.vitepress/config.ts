@@ -1,30 +1,41 @@
+import { pwaDocs as pwa } from '@stacksjs/docs'
+import { path as p } from '@stacksjs/path'
+import { withPwa } from '@vite-pwa/vitepress'
 import { defineConfig } from 'vitepress'
+import { transformerTwoslash } from 'vitepress-plugin-twoslash'
+import userConfig from '../../docs/config'
+import viteConfig from './vite.config'
 
-export default defineConfig({
-  title: 'Reverse Proxy',
-  description: 'A better developer environment.',
-  cleanUrls: true,
-  themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
-    nav: [
-      { text: 'Docs', link: '/intro' },
-      { text: 'Install', link: '/install' },
-    ],
+// https://vitepress.dev/reference/site-config
 
-    sidebar: [
-      {
-        text: 'Get Started',
-        items: [
-          { text: 'Introduction', link: '/intro' },
-          { text: 'Install', link: '/install' },
-        ],
+export default withPwa(
+  defineConfig({
+    srcDir: p.projectPath('docs'),
+    outDir: p.frameworkPath('docs/dist'),
+    cacheDir: p.frameworkPath('cache/docs'),
+    assetsDir: '/assets',
+    emptyOutDir: true,
+    ignoreDeadLinks: true,
+
+    // sitemap: {
+    //   hostname: 'stacks.localhost',
+    // },
+
+    pwa,
+
+    markdown: {
+      theme: {
+        light: 'vitesse-light',
+        dark: 'vitesse-dark',
       },
-    ],
 
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/stacksjs/rpx' },
-      { icon: 'bluesky', link: 'https://bsky.app/profile/chrisbreuer.dev' },
-      { icon: 'twitter', link: 'https://twitter.com/stacksjs' },
-    ],
-  },
-})
+      codeTransformers: [
+        transformerTwoslash(),
+      ],
+    },
+
+    vite: viteConfig,
+
+    ...userConfig,
+  }),
+)

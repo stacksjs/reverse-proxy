@@ -6,9 +6,10 @@ hero:
   name: "rpx"
   text: "For a better local environment."
   tagline: "Modern and smart reverse proxy."
+  image: assets/images/logos/logo-white.png
   actions:
     - theme: brand
-      text: Documentation
+      text: Get Started
       link: /intro
     - theme: alt
       text: View on GitHub
@@ -28,3 +29,5 @@ features:
     icon: "🛠"
     details: "Use the CLI or the library in your own project."
 ---
+
+<Home />
