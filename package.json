@@ -60,7 +60,6 @@
   "dependencies": {
     "@iconify-json/carbon": "^1.2.5",
     "@shikijs/vitepress-twoslash": "^1.24.2",
-    "@stacksjs/alias": "^0.68.2",
     "@vite-pwa/vitepress": "^0.5.3",
     "unplugin-icons": "^0.22.0",
     "vite-plugin-pwa": "^0.21.1"
@@ -73,6 +72,8 @@
     "bun-config": "^0.3.2",
     "bun-plugin-dtsx": "^0.21.9",
     "typescript": "^5.7.2",
+    "unocss": "0.61.0",
+    "unplugin-vue-components": "^0.28.0",
     "vitepress": "^1.5.0"
   },
   "simple-git-hooks": {
