@@ -1,27 +1,152 @@
-import { pwaDocs as pwa } from '@stacksjs/docs'
-import { path as p } from '@stacksjs/path'
+import type { HeadConfig } from 'vitepress'
+import { transformerTwoslash } from '@shikijs/vitepress-twoslash'
 import { withPwa } from '@vite-pwa/vitepress'
 import { defineConfig } from 'vitepress'
-import { transformerTwoslash } from 'vitepress-plugin-twoslash'
-import userConfig from '../../docs/config'
+
 import viteConfig from './vite.config'
 
 // https://vitepress.dev/reference/site-config
 
+const analytics = {
+  driver: 'fathom',
+
+  drivers: {
+    googleAnalytics: {
+      trackingId: 'UA-XXXXXXXXX-X',
+    },
+
+    fathom: {
+      siteId: 'WOLZMJDL',
+    },
+  },
+}
+
+const fathomAnalyticsHead: HeadConfig[] = [
+  [
+    'script',
+    {
+      'src': 'https://cdn.usefathom.com/script.js',
+      'data-site': analytics.drivers?.fathom?.siteId || '',
+      'defer': '',
+    },
+  ],
+]
+
+const googleAnalyticsHead: HeadConfig[] = [
+  [
+    'script',
+    {
+      async: '',
+      src: `https://www.googletagmanager.com/gtag/js?id=${analytics.drivers?.googleAnalytics?.trackingId}`,
+    },
+  ],
+  [
+    'script',
+    {},
+    `window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'TAG_ID');`,
+  ],
+]
+
+const nav = [
+  {
+    text: 'Changelog',
+    link: 'https://github.com/stacksjs/stacks/blob/main/CHANGELOG.md',
+  },
+  // { text: 'Blog', link: 'https://updates.ow3.org' },
+  {
+    text: 'Resources',
+    items: [
+      { text: 'Team', link: '/team' },
+      { text: 'Sponsors', link: '/sponsors' },
+      { text: 'Partners', link: '/partners' },
+      { text: 'Postcardware', link: '/postcardware' },
+      {
+        items: [
+          {
+            text: 'Awesome Stacks',
+            link: 'https://github.com/stacksjs/awesome-stacks',
+          },
+          {
+            text: 'Contributing',
+            link: 'https://github.com/stacksjs/stacks/blob/main/.github/CONTRIBUTING.md',
+          },
+        ],
+      },
+    ],
+  },
+]
+
+const sidebar = [
+  {
+    text: 'Get Started',
+    items: [
+      { text: 'Introduction', link: '/intro' },
+      { text: 'Install', link: '/install' },
+    ],
+  },
+]
+
+const analyticsHead
+  = analytics.driver === 'fathom'
+    ? fathomAnalyticsHead
+    : analytics.driver === 'google-analytics'
+      ? googleAnalyticsHead
+      : []
+
 export default withPwa(
   defineConfig({
-    srcDir: p.projectPath('docs'),
-    outDir: p.frameworkPath('docs/dist'),
-    cacheDir: p.frameworkPath('cache/docs'),
-    assetsDir: '/assets',
-    emptyOutDir: true,
-    ignoreDeadLinks: true,
+    lang: 'en-US',
+    title: 'Stacks',
+    description: 'Rapid application, cloud & library development framework.',
+    metaChunk: true,
 
-    // sitemap: {
-    //   hostname: 'stacks.localhost',
-    // },
+    head: [
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/assets/images/logos/logo-mini' }],
+      ['link', { rel: 'icon', type: 'image/png', href: './assets/images/logos/logo.png' }],
+      ['meta', { name: 'theme-color', content: '#1e40af' }],
+      ['meta', { property: 'og:type', content: 'website' }],
+      ['meta', { property: 'og:locale', content: 'en' }],
+      ['meta', { property: 'og:title', content: 'Stacks | A better developer environment.' }],
+      ['meta', { property: 'og:site_name', content: 'Stacks' }],
+      ['meta', { property: 'og:image', content: 'https://stacksjs.org/images/og-image.png' }],
+      ['meta', { property: 'og:url', content: 'https://stacksjs.org/' }],
+      // ['script', { 'src': 'https://cdn.usefathom.com/script.js', 'data-site': '', 'data-spa': 'auto', 'defer': '' }],
+      ...analyticsHead,
+    ],
 
-    pwa,
+    themeConfig: {
+      logo: './assets/images/logos/logo-transparent.svg',
+
+      nav,
+      sidebar,
+
+      editLink: {
+        pattern: 'https://github.com/stacksjs/stacks/edit/main/docs/docs/:path',
+        text: 'Edit this page on GitHub',
+      },
+
+      footer: {
+        message: 'Released under the MIT License.',
+        copyright: 'Copyright © 2024-present Stacks.js, Inc.',
+      },
+
+      socialLinks: [
+        { icon: 'twitter', link: 'https://twitter.com/stacksjs' },
+        { icon: 'bluesky', link: 'https://bsky.app/profile/chrisbreuer.dev' },
+        { icon: 'github', link: 'https://github.com/stacksjs/stacks' },
+        { icon: 'discord', link: 'https://discord.gg/stacksjs' },
+      ],
+
+      // algolia: services.algolia,
+
+      // carbonAds: {
+      //   code: '',
+      //   placement: '',
+      // },
+    },
 
     markdown: {
       theme: {
@@ -35,7 +160,5 @@ export default withPwa(
     },
 
     vite: viteConfig,
-
-    ...userConfig,
   }),
 )

@@ -58,12 +58,8 @@
     "preview:docs": "bun --bun vitepress preview docs"
   },
   "dependencies": {
+    "@shikijs/vitepress-twoslash": "^1.24.2",
     "@stacksjs/alias": "^0.68.2",
-    "@stacksjs/docs": "^0.68.2",
-    "@stacksjs/path": "^0.68.2",
-    "@stacksjs/server": "^0.68.2",
-    "@stacksjs/tlsx": "^0.8.5",
-    "@stacksjs/tunnel": "^0.68.1",
     "@vite-pwa/vitepress": "^0.5.3",
     "unplugin-icons": "^0.22.0",
     "vite-plugin-pwa": "^0.21.1"

@@ -1,4 +1,17 @@
-import type { AnalyticsConfig } from '@stacksjs/types'
+interface AnalyticsOptions {
+  driver: 'google-analytics' | 'fathom'
+
+  drivers: {
+    googleAnalytics?: {
+      trackingId: string
+    }
+    fathom?: {
+      siteId: string
+    }
+  }
+}
+
+type AnalyticsConfig = Partial<AnalyticsOptions>
 
 /**
  * **Analytics Configuration**

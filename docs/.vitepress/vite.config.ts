@@ -1,8 +1,5 @@
 import { resolve } from 'node:path'
 // import Inspect from 'vite-plugin-inspect'
-import { alias } from '@stacksjs/alias'
-import { path } from '@stacksjs/path'
-import { server } from '@stacksjs/server'
 import UnoCSS from 'unocss/vite'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
@@ -10,8 +7,6 @@ import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  publicDir: path.publicPath(),
-
   build: {
     assetsDir: 'assets',
     rollupOptions: {
@@ -21,13 +16,7 @@ export default defineConfig({
     },
   },
 
-  server: server({
-    type: 'docs',
-  }),
-
   resolve: {
-    alias,
-
     dedupe: [
       'vue',
       '@vue/runtime-core',
@@ -41,7 +30,7 @@ export default defineConfig({
 
     // plugins
     Components({
-      dirs: path.projectPath('resources/components/Docs'),
+      dirs: resolve(__dirname, 'theme/components'),
       include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
       resolvers: [
         IconsResolver({

@@ -43,17 +43,6 @@ const coreTeamMembers: CoreTeam[] = [
   },
 
   {
-    avatar: contributorsAvatars.glennmichael123 || 'default-avatar.png',
-    name: 'Glenn',
-    github: 'glennmichael123',
-    twitter: 'glennmichael123',
-    sponsors: false,
-    packages: ['core'],
-    functions: ['backend', 'frontend', 'desktop'],
-    description: 'A collaborative being<br>Core team member of Stacks, working at Stacks.js, Inc.',
-  },
-
-  {
     avatar: contributorsAvatars['cab-mikee'] || 'default-avatar.png',
     name: 'Mike',
     github: 'cab-mikee',
@@ -62,16 +51,6 @@ const coreTeamMembers: CoreTeam[] = [
     description: 'A collaborative being<br>Core team member of Stacks, working at Stacks.js, Inc.',
     packages: ['core'],
     functions: ['backend', 'frontend'],
-  },
-
-  {
-    avatar: contributorsAvatars.konkonam || 'default-avatar.png',
-    name: 'Zoltan',
-    github: 'konkonam',
-    sponsors: true,
-    description: 'Open sourceror<br>Core team member of Stacks.',
-    packages: ['core'],
-    functions: ['backend', 'frontend', 'desktop'],
   },
 ]
   .sort((pre, cur) => contributors.findIndex(name => name === pre.github) - contributors.findIndex(name => name === cur.github))
