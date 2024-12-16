@@ -58,6 +58,7 @@
     "preview:docs": "bun --bun vitepress preview docs"
   },
   "dependencies": {
+    "@iconify-json/carbon": "^1.2.5",
     "@shikijs/vitepress-twoslash": "^1.24.2",
     "@stacksjs/alias": "^0.68.2",
     "@vite-pwa/vitepress": "^0.5.3",
