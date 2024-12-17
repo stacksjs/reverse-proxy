@@ -6,7 +6,7 @@ hero:
   name: "rpx"
   text: "For a better local environment."
   tagline: "Modern and smart reverse proxy."
-  image: assets/images/logos/logo-white.png
+  image: /images/logo-white.png
   actions:
     - theme: brand
       text: Get Started

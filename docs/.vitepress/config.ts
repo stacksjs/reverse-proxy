@@ -84,7 +84,6 @@ const sidebar = [
     text: 'Get Started',
     items: [
       { text: 'Introduction', link: '/intro' },
-      { text: 'Install', link: '/install' },
     ],
   },
 ]
@@ -104,21 +103,21 @@ export default withPwa(
     metaChunk: true,
 
     head: [
-      ['link', { rel: 'icon', type: 'image/svg+xml', href: '/assets/images/logos/logo-mini' }],
-      ['link', { rel: 'icon', type: 'image/png', href: './assets/images/logos/logo.png' }],
+      ['link', { rel: 'icon', type: 'image/svg+xml', href: './images/logo-mini.svg' }],
+      ['link', { rel: 'icon', type: 'image/png', href: './images/logo.png' }],
       ['meta', { name: 'theme-color', content: '#1e40af' }],
       ['meta', { property: 'og:type', content: 'website' }],
       ['meta', { property: 'og:locale', content: 'en' }],
       ['meta', { property: 'og:title', content: 'Stacks | A better developer environment.' }],
       ['meta', { property: 'og:site_name', content: 'Stacks' }],
-      ['meta', { property: 'og:image', content: 'https://stacksjs.org/images/og-image.png' }],
+      ['meta', { property: 'og:image', content: './images/og-image.jpg' }],
       ['meta', { property: 'og:url', content: 'https://stacksjs.org/' }],
       // ['script', { 'src': 'https://cdn.usefathom.com/script.js', 'data-site': '', 'data-spa': 'auto', 'defer': '' }],
       ...analyticsHead,
     ],
 
     themeConfig: {
-      logo: './assets/images/logos/logo-transparent.svg',
+      logo: './images/logo-transparent.svg',
 
       nav,
       sidebar,

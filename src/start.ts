@@ -642,14 +642,14 @@ export async function startProxies(options?: ReverseProxyOptions): Promise<void>
   // Prepare proxy configurations
   const proxyOptions = isMultiProxyConfig(mergedOptions)
     ? mergedOptions.proxies.map(proxy => ({
-      ...proxy,
-      https: mergedOptions.https,
-      cleanup: mergedOptions.cleanup,
-      cleanUrls: mergedOptions.cleanUrls,
-      vitePluginUsage: mergedOptions.vitePluginUsage,
-      verbose: mergedOptions.verbose,
-      _cachedSSLConfig: mergedOptions._cachedSSLConfig,
-    }))
+        ...proxy,
+        https: mergedOptions.https,
+        cleanup: mergedOptions.cleanup,
+        cleanUrls: mergedOptions.cleanUrls,
+        vitePluginUsage: mergedOptions.vitePluginUsage,
+        verbose: mergedOptions.verbose,
+        _cachedSSLConfig: mergedOptions._cachedSSLConfig,
+      }))
     : [{
         from: mergedOptions.from || 'localhost:5173',
         to: mergedOptions.to || 'stacks.localhost',

@@ -1,49 +1,209 @@
----
-outline: deep
----
+<p align="center"><img src="https://github.com/stacksjs/rpx/blob/main/.github/art/cover.jpg?raw=true" alt="Social Card of this repo"></p>
 
-# Runtime API Examples
+# A Better Developer Experience
 
-This page demonstrates usage of some of the runtime APIs provided by VitePress.
+> A zero-config reverse proxy for local development with SSL support, custom domains, and more.
 
-The main `useData()` API can be used to access site, theme, and page data for the current page. It works in both `.md` and `.vue` files:
+## Features
 
-```md
-<script setup>
-import { useData } from 'vitepress'
+- Simple, lightweight Reverse Proxy
+- Custom Domains _(with wildcard support)_
+- Zero-Config Setup
+- SSL Support _(HTTPS by default)_
+- Auto HTTP-to-HTTPS Redirection
+- Self `/etc/hosts` Management
 
-const { theme, page, frontmatter } = useData()
-</script>
+## Install
 
-## Results
-
-### Theme Data
-<pre>{{ theme }}</pre>
-
-### Page Data
-<pre>{{ page }}</pre>
-
-### Page Frontmatter
-<pre>{{ frontmatter }}</pre>
+```bash
+bun install -d @stacksjs/rpx
 ```
 
-<script setup>
-import { useData } from 'vitepress'
+<!-- _Alternatively, you can install:_
 
-const { site, theme, page, frontmatter } = useData()
-</script>
+```bash
+brew install rpx # wip
+pkgx install rpx # wip
+``` -->
 
-## Results
+## Get Started
 
-### Theme Data
-<pre>{{ theme }}</pre>
+There are two ways of using this reverse proxy: _as a library or as a CLI._
 
-### Page Data
-<pre>{{ page }}</pre>
+### Library
 
-### Page Frontmatter
-<pre>{{ frontmatter }}</pre>
+Given the npm package is installed:
 
-## More
+```ts
+import type { TlsConfig } from '@stacksjs/rpx'
+import { startProxy } from '@stacksjs/rpx'
 
-Check out the documentation for the [full list of runtime APIs](https://vitepress.dev/reference/runtime-api#usedata).
+export interface CleanupConfig {
+  hosts: boolean // clean up /etc/hosts, defaults to false
+  certs: boolean // clean up certificates, defaults to false
+}
+
+export interface ReverseProxyConfig {
+  from: string // domain to proxy from, defaults to localhost:3000
+  to: string // domain to proxy to, defaults to stacks.localhost
+  cleanUrls?: boolean // removes the .html extension from URLs, defaults to false
+  https: boolean | TlsConfig // automatically uses https, defaults to true, also redirects http to https
+  cleanup?: boolean | CleanupConfig // automatically cleans up /etc/hosts, defaults to false
+  verbose: boolean // log verbose output, defaults to false
+}
+
+const config: ReverseProxyOptions = {
+  from: 'localhost:3000',
+  to: 'my-docs.localhost',
+  cleanUrls: true,
+  https: true,
+  cleanup: false,
+}
+
+startProxy(config)
+```
+
+In case you are trying to start multiple proxies, you may use this configuration:
+
+```ts
+// reverse-proxy.config.{ts,js}
+import type { ReverseProxyOptions } from '@stacksjs/rpx'
+import os from 'node:os'
+import path from 'node:path'
+
+const config: ReverseProxyOptions = {
+  https: { // https: true -> also works with sensible defaults
+    caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
+    certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
+    keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
+  },
+
+  cleanup: {
+    hosts: true,
+    certs: false,
+  },
+
+  proxies: [
+    {
+      from: 'localhost:5173',
+      to: 'my-app.localhost',
+      cleanUrls: true,
+    },
+    {
+      from: 'localhost:5174',
+      to: 'my-api.local',
+    },
+  ],
+
+  verbose: true,
+}
+
+export default config
+```
+
+### CLI
+
+```bash
+rpx --from localhost:3000 --to my-project.localhost
+rpx --from localhost:8080 --to my-project.test --keyPath ./key.pem --certPath ./cert.pem
+rpx --help
+rpx --version
+```
+
+## Configuration
+
+The Reverse Proxy can be configured using a `reverse-proxy.config.ts` _(or `reverse-proxy.config.js`)_ file and it will be automatically loaded when running the `reverse-proxy` command.
+
+```ts
+// reverse-proxy.config.{ts,js}
+import type { ReverseProxyOptions } from '@stacksjs/rpx'
+import os from 'node:os'
+import path from 'node:path'
+
+const config: ReverseProxyOptions = {
+  from: 'localhost:5173',
+  to: 'stacks.localhost',
+
+  https: {
+    domain: 'stacks.localhost',
+    hostCertCN: 'stacks.localhost',
+    caCertPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.ca.crt`),
+    certPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
+    keyPath: path.join(os.homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
+    altNameIPs: ['127.0.0.1'],
+    altNameURIs: ['localhost'],
+    organizationName: 'stacksjs.org',
+    countryName: 'US',
+    stateName: 'California',
+    localityName: 'Playa Vista',
+    commonName: 'stacks.localhost',
+    validityDays: 180,
+    verbose: false,
+  },
+
+  verbose: false,
+}
+
+export default config
+```
+
+_Then run:_
+
+```bash
+./rpx start
+```
+
+To learn more, head over to the [documentation](https://reverse-proxy.sh/).
+
+## Testing
+
+```bash
+bun test
+```
+
+## Changelog
+
+Please see our [releases](https://github.com/stacksjs/stacks/releases) page for more information on what has changed recently.
+
+## Contributing
+
+Please review the [Contributing Guide](https://github.com/stacksjs/contributing) for details.
+
+## Community
+
+For help, discussion about best practices, or any other conversation that would benefit from being searchable:
+
+[Discussions on GitHub](https://github.com/stacksjs/stacks/discussions)
+
+For casual chit-chat with others using this package:
+
+[Join the Stacks Discord Server](https://discord.gg/stacksjs)
+
+## Postcardware
+
+Two things are true: Stacks OSS will always stay open-source, and we do love to receive postcards from wherever Stacks is used! 🌍 _We also publish them on our website. And thank you, Spatie_
+
+Our address: Stacks.js, 12665 Village Ln #2306, Playa Vista, CA 90094
+
+## Sponsors
+
+We would like to extend our thanks to the following sponsors for funding Stacks development. If you are interested in becoming a sponsor, please reach out to us.
+
+- [JetBrains](https://www.jetbrains.com/)
+- [The Solana Foundation](https://solana.com/)
+
+## Credits
+
+- [Chris Breuer](https://github.com/chrisbbreuer)
+- [All Contributors](https://github.com/stacksjs/rpx/graphs/contributors)
+
+## License
+
+The MIT License (MIT). Please see [LICENSE](https://github.com/stacksjs/stacks/tree/main/LICENSE.md) for more information.
+
+Made with 💙
+
+<!-- Badges -->
+
+<!-- [codecov-src]: https://img.shields.io/codecov/c/gh/stacksjs/rpx/main?style=flat-square
+[codecov-href]: https://codecov.io/gh/stacksjs/rpx -->
