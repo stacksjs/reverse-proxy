@@ -105,13 +105,13 @@ export default withPwa(
     head: [
       ['link', { rel: 'icon', type: 'image/svg+xml', href: './images/logo-mini.svg' }],
       ['link', { rel: 'icon', type: 'image/png', href: './images/logo.png' }],
-      ['meta', { name: 'theme-color', content: '#1e40af' }],
+      ['meta', { name: 'theme-color', content: '#0A0ABC' }],
       ['meta', { property: 'og:type', content: 'website' }],
       ['meta', { property: 'og:locale', content: 'en' }],
-      ['meta', { property: 'og:title', content: 'Stacks | A better developer environment.' }],
-      ['meta', { property: 'og:site_name', content: 'Stacks' }],
+      ['meta', { property: 'og:title', content: 'Reverse Proxy | A better developer environment.' }],
+      ['meta', { property: 'og:site_name', content: 'Reverse Proxy' }],
       ['meta', { property: 'og:image', content: './images/og-image.jpg' }],
-      ['meta', { property: 'og:url', content: 'https://stacksjs.org/' }],
+      ['meta', { property: 'og:url', content: 'https://reverse-proxy.sh/' }],
       // ['script', { 'src': 'https://cdn.usefathom.com/script.js', 'data-site': '', 'data-spa': 'auto', 'defer': '' }],
       ...analyticsHead,
     ],
@@ -145,6 +145,12 @@ export default withPwa(
       //   code: '',
       //   placement: '',
       // },
+    },
+
+    pwa: {
+      manifest: {
+        theme_color: '#0A0ABC'
+      }
     },
 
     markdown: {
