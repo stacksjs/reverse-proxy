@@ -38,25 +38,5 @@ defineProps<{
         :aria-label="`Sponsor ${data.name}`"
       />
     </div>
-
-    <div v-if="data.functions || data.packages" grid="~ cols-[20px_1fr] gap-x-1 gap-y-2" w="5/6" mxa mb2 items-start rounded bg-gray:5 p3>
-      <template v-if="data.functions">
-        <div i-carbon:function-math ma op50 title="Functions" />
-        <div flex="~ row wrap gap-2" text-left text-sm>
-          <a v-for="f of data.functions" :key="f" :href="`/${f}`" target="_blank">
-            <code>{{ f }}</code>
-          </a>
-        </div>
-      </template>
-
-      <template v-if="data.packages">
-        <div i-carbon-cube ma op50 title="Packages" />
-        <div flex="~ row wrap gap-2" text-left text-sm>
-          <a v-for="f of data.packages" :key="f" href="/add-ons">
-            <code>{{ f }}</code>
-          </a>
-        </div>
-      </template>
-    </div>
   </div>
 </template>

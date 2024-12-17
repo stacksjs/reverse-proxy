@@ -23,9 +23,13 @@ function getAvatarUrl(name: string) {
   return `https://avatars.githubusercontent.com/${name}?v=4`
 }
 
-const contributorList = (contributors as string[]).reduce((acc, name) => {
+const contributorList = (Object.keys(contributors) as string[]).reduce((acc, name) => {
   contributorsAvatars[name] = getAvatarUrl(name)
-  acc.push({ name, avatar: contributorsAvatars[name] })
+
+  if (contributors[name]) {
+    acc.push({ name, avatar: contributorsAvatars[name] })
+  }
+
   return acc
 }, [] as Contributor[])
 
@@ -41,6 +45,16 @@ const coreTeamMembers: CoreTeam[] = [
     packages: ['core'],
     functions: ['cloud', 'backend', 'frontend', 'ci/cd'],
   },
+  {
+    avatar: contributorsAvatars.glennmichael123 || 'default-avatar.png',
+    name: 'Glenn',
+    github: 'glennmichael123',
+    twitter: 'glennmichael123',
+    sponsors: false,
+    packages: ['core'],
+    functions: ['backend', 'frontend', 'desktop'],
+    description: 'A collaborative being<br>Core team member of Stacks, working at Stacks.js, Inc.',
+  },
 
   {
     avatar: contributorsAvatars['cab-mikee'] || 'default-avatar.png',
@@ -52,7 +66,20 @@ const coreTeamMembers: CoreTeam[] = [
     packages: ['core'],
     functions: ['backend', 'frontend'],
   },
+
+  {
+    avatar: contributorsAvatars.konkonam || 'default-avatar.png',
+    name: 'Zoltan',
+    github: 'konkonam',
+    sponsors: true,
+    description: 'Open sourceror<br>Core team member of Stacks.',
+    packages: ['core'],
+    functions: ['backend', 'frontend', 'desktop'],
+  },
 ]
-  .sort((pre, cur) => contributors.findIndex(name => name === pre.github) - contributors.findIndex(name => name === cur.github))
+  .sort((pre, cur) => {
+    const contribute = Object.keys(contributors)
+    return contribute.findIndex(name => name === pre.github) - contribute.findIndex(name => name === cur.github)
+  })
 
 export { contributorList as contributors, coreTeamMembers }
