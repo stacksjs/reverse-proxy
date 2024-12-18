@@ -13,7 +13,10 @@ export const defaultConfig: ReverseProxyConfig = {
     certPath: join(homedir(), '.stacks', 'ssl', `stacks.localhost.crt`),
     keyPath: join(homedir(), '.stacks', 'ssl', `stacks.localhost.crt.key`),
   },
-  etcHostsCleanup: true,
+  cleanup: {
+    certs: false,
+    hosts: false,
+  },
   vitePluginUsage: false,
   verbose: true,
 }

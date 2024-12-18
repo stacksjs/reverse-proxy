@@ -12,7 +12,10 @@ interface ReverseProxyOption {
   keyPath: string
   certPath: string
   caCertPath: string
-  etcHostsCleanup: boolean
+  cleanup: {
+    certs: boolean
+    hosts: boolean
+  }
   verbose: boolean
 }
 
@@ -23,7 +26,8 @@ cli
   .option('--key-path <path>', 'Absolute path to the SSL key')
   .option('--cert-path <path>', 'Absolute path to the SSL certificate')
   .option('--ca-cert-path <path>', 'Absolute path to the SSL CA certificate')
-  .option('--etc-hosts-cleanup', 'Cleanup /etc/hosts on exit')
+  .option('--hosts-cleanup', 'Cleanup /etc/hosts on exit')
+  .option('--certs-cleanup', 'Cleanup SSL certificates on exit')
   .option('--verbose', 'Enable verbose logging')
   .example('reverse-proxy start --from localhost:5173 --to my-project.localhost')
   .example('reverse-proxy start --from localhost:3000 --to my-project.localhost/api')
@@ -38,7 +42,10 @@ cli
       from: options?.from,
       to: options?.to,
       https: httpsConfig(options),
-      etcHostsCleanup: options?.etcHostsCleanup,
+      cleanup: {
+        certs: options?.cleanup.certs,
+        hosts: options?.cleanup.hosts,
+      },
       verbose: options?.verbose,
     })
   })
