@@ -18,6 +18,7 @@ entrypoints
 findstr
 heroicons
 HSTS
+iconify
 lockb
 mkcert
 nosniff
@@ -31,11 +32,14 @@ postcompile
 prefetch
 preinstall
 proxied
+shikijs
 socio
 Solana
 stacksjs
 tlsx
+twoslash
 typecheck
+unocss
 unplugin
 unref
 upath
