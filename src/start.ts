@@ -4,10 +4,12 @@ import type { ServerOptions } from 'node:https'
 import type { CleanupOptions, ProxySetupOptions, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
 import * as http from 'node:http'
 import * as https from 'node:https'
+import * as http2 from 'node:http2'
 import * as net from 'node:net'
 import process from 'node:process'
+import type { IncomingHttpHeaders } from 'node:http2' 
 import { consola as log } from 'consola'
-import { bold, dim, green } from 'picocolors'
+import colors from 'picocolors'
 import { version } from '../package.json'
 import { config } from './config'
 import { addHosts, checkHosts, removeHosts } from './hosts'
@@ -16,6 +18,10 @@ import { debugLog, isMultiProxyConfig } from './utils'
 
 // Keep track of all running servers for cleanup
 const activeServers: Set<http.Server | https.Server> = new Set()
+
+type AnyServerType = http.Server | https.Server | http2.Http2SecureServer
+type AnyIncomingMessage = http.IncomingMessage | http2.Http2ServerRequest
+type AnyServerResponse = http.ServerResponse | http2.Http2ServerResponse
 
 /**
  * Cleanup function to close all servers, cleanup hosts file, and remove certificates if configured
@@ -312,10 +318,30 @@ async function createProxyServer(
 ): Promise<void> {
   debugLog('proxy', `Creating proxy server ${from} -> ${to} with cleanUrls: ${cleanUrls}`, verbose)
 
-  const requestHandler = (req: http.IncomingMessage, res: http.ServerResponse) => {
+  // Convert HTTP/2 headers to HTTP/1 compatible format
+  function normalizeHeaders(headers: IncomingHttpHeaders): http.OutgoingHttpHeaders {
+    const normalized: http.OutgoingHttpHeaders = {}
+    for (const [key, value] of Object.entries(headers)) {
+      // Skip HTTP/2 pseudo-headers
+      if (!key.startsWith(':')) {
+        normalized[key] = value
+      }
+    }
+    return normalized
+  }
+
+  const requestHandler = (req: AnyIncomingMessage, res: AnyServerResponse) => {
     debugLog('request', `Incoming request: ${req.method} ${req.url}`, verbose)
 
     let path = req.url || '/'
+    let method = req.method || 'GET'
+
+    // For HTTP/2 requests, extract method and path from pseudo-headers
+    if (req instanceof http2.Http2ServerRequest) {
+      const headers = req.headers
+      method = (headers[':method'] as string) || method
+      path = (headers[':path'] as string) || path
+    }
 
     // Handle clean URLs
     if (cleanUrls) {
@@ -336,11 +362,8 @@ async function createProxyServer(
       hostname: sourceUrl.hostname,
       port: fromPort,
       path,
-      method: req.method,
-      headers: {
-        ...req.headers,
-        host: sourceUrl.host,
-      },
+      method,
+      headers: normalizeHeaders(req.headers),
     }
 
     debugLog('request', `Proxy request options: ${JSON.stringify(proxyOptions)}`, verbose)
@@ -428,34 +451,37 @@ async function createProxyServer(
   // SSL configuration
   const serverOptions: (ServerOptions & SecureServerOptions) | undefined = ssl
     ? {
-        key: ssl.key,
-        cert: ssl.cert,
-        ca: ssl.ca,
-        minVersion: 'TLSv1.2' as const,
-        maxVersion: 'TLSv1.3' as const,
-        requestCert: false,
-        rejectUnauthorized: false,
-        ciphers: [
-          'TLS_AES_128_GCM_SHA256',
-          'TLS_AES_256_GCM_SHA384',
-          'TLS_CHACHA20_POLY1305_SHA256',
-          'ECDHE-ECDSA-AES128-GCM-SHA256',
-          'ECDHE-RSA-AES128-GCM-SHA256',
-          'ECDHE-ECDSA-AES256-GCM-SHA384',
-          'ECDHE-RSA-AES256-GCM-SHA384',
-        ].join(':'),
-        allowHTTP1: true,
-        ALPNProtocols: ['h2', 'http/1.1'],
-      }
+      key: ssl.key,
+      cert: ssl.cert,
+      ca: ssl.ca,
+      minVersion: 'TLSv1.2',
+      maxVersion: 'TLSv1.3',
+      requestCert: false,
+      rejectUnauthorized: false,
+      ciphers: [
+        'TLS_AES_128_GCM_SHA256',
+        'TLS_AES_256_GCM_SHA384',
+        'TLS_CHACHA20_POLY1305_SHA256',
+        'ECDHE-ECDSA-AES128-GCM-SHA256',
+        'ECDHE-RSA-AES128-GCM-SHA256',
+        'ECDHE-ECDSA-AES256-GCM-SHA384',
+        'ECDHE-RSA-AES256-GCM-SHA384',
+      ].join(':'),
+    }
     : undefined
 
   debugLog('server', `Creating server with SSL config: ${!!ssl}`, verbose)
 
-  const server = ssl && serverOptions
-    ? https.createServer(serverOptions, requestHandler)
-    : http.createServer(requestHandler)
+  let server: AnyServerType
 
-  if (ssl) {
+  if (ssl && serverOptions) {
+    // Start with an HTTPS server since it's more widely compatible
+    server = https.createServer(serverOptions, requestHandler)
+
+    server.on('error', (err: Error) => {
+      debugLog('server', `HTTPS server error: ${err}`, verbose)
+    })
+
     server.on('secureConnection', (tlsSocket) => {
       debugLog('tls', `TLS Connection established: ${JSON.stringify({
         protocol: tlsSocket.getProtocol?.(),
@@ -465,40 +491,51 @@ async function createProxyServer(
       })}`, verbose)
     })
   }
+  else {
+    server = http.createServer(requestHandler)
+  }
 
-  activeServers.add(server)
+  // Update the activeServers Set type
+  const activeServers = new Set<http.Server | https.Server>()
 
-  return new Promise((resolve, reject) => {
-    server.listen(listenPort, hostname, () => {
-      debugLog('server', `Server listening on port ${listenPort}`, verbose)
+  function setupServer(serverInstance: AnyServerType) {
+    // Type assertion since we know these servers are compatible
+    activeServers.add(serverInstance as http.Server | https.Server)
 
-      if (!vitePluginUsage) {
-        console.log('')
-        console.log(`  ${green(bold('reverse-proxy'))} ${green(`v${version}`)}`)
-        console.log('')
-        console.log(`  ${green('➜')}  ${dim(from)} ${dim('➜')} ${ssl ? 'https' : 'http'}://${to}`)
-        if (listenPort !== (ssl ? 443 : 80))
-          console.log(`  ${green('➜')}  Listening on port ${listenPort}`)
-        if (ssl) {
-          console.log(`  ${green('➜')}  SSL enabled with:`)
-          console.log(`     - TLS 1.2/1.3`)
-          console.log(`     - Modern cipher suite`)
-          console.log(`     - HTTP/2 enabled`)
-          console.log(`     - HSTS enabled`)
+    return new Promise<void>((resolve, reject) => {
+      serverInstance.listen(listenPort, hostname, () => {
+        debugLog('server', `Server listening on port ${listenPort}`, verbose)
+
+        if (!vitePluginUsage) {
+          console.log('')
+          console.log(`  ${colors.green(colors.bold('reverse-proxy'))} ${colors.green(`v${version}`)}`)
+          console.log('')
+          console.log(`  ${colors.green('➜')}  ${colors.dim(from)} ${colors.dim('➜')} ${ssl ? 'https' : 'http'}://${to}`)
+          if (listenPort !== (ssl ? 443 : 80))
+            console.log(`  ${colors.green('➜')}  Listening on port ${listenPort}`)
+          if (ssl) {
+            console.log(`  ${colors.green('➜')}  SSL enabled with:`)
+            console.log(`     - TLS 1.2/1.3`)
+            console.log(`     - Modern cipher suite`)
+            console.log(`     - HTTP/2 enabled`)
+            console.log(`     - HSTS enabled`)
+          }
+          if (cleanUrls) {
+            console.log(`  ${colors.green('➜')}  Clean URLs enabled`)
+          }
         }
-        if (cleanUrls) {
-          console.log(`  ${green('➜')}  Clean URLs enabled`)
-        }
-      }
 
-      resolve()
-    })
+        resolve()
+      })
 
-    server.on('error', (err) => {
-      debugLog('server', `Server error: ${err}`, verbose)
-      reject(err)
+      serverInstance.on('error', (err) => {
+        debugLog('server', `Server error: ${err}`, verbose)
+        reject(err)
+      })
     })
-  })
+  }
+
+  return setupServer(server)
 }
 
 export async function setupReverseProxy(options: ProxySetupOptions): Promise<void> {
