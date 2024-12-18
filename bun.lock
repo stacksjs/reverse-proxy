@@ -6,7 +6,7 @@
         "@iconify-json/carbon": "^1.2.5",
         "@shikijs/vitepress-twoslash": "^1.24.2",
         "@stacksjs/eslint-config": "^3.12.0-beta.4",
-        "@stacksjs/tlsx": "^0.8.5",
+        "@stacksjs/tlsx": "^0.9.0",
         "@types/bun": "^1.1.14",
         "@vite-pwa/vitepress": "^0.5.3",
         "bun-config": "^0.3.2",
@@ -443,7 +443,7 @@
 
     "@stacksjs/eslint-plugin": ["@stacksjs/eslint-plugin@0.1.3", "", {}, "sha512-35S2kasi4D7Xh7fil+4IIX7Oaop6W1aiGlsm1IBYqahRq/P+1we5Pb5Fa1WPz0kyMiEtFg1130woIywzdhELSg=="],
 
-    "@stacksjs/tlsx": ["@stacksjs/tlsx@0.8.5", "", { "bin": { "tlsx": "dist/bin/cli.js" } }, "sha512-1CbVQEy/I8e8bzMvQYX4RCAX4CQLOZxPSVQaH5G8FnjRMRxXToJxC8xuzZ4cBz83ZtnNVVbi0Sgz+cWXJRrTJA=="],
+    "@stacksjs/tlsx": ["@stacksjs/tlsx@0.9.0", "", { "bin": { "tlsx": "dist/bin/cli.js" } }, "sha512-WirJYPOoTR+d7KFR5zd0JsLG6hFo7xbpTJpKoJTNq67Isy3Rtw6gvlY2JVmbigtj79LGtA2rfsaMvh0Sqdc2DQ=="],
 
     "@stylistic/eslint-plugin": ["@stylistic/eslint-plugin@2.12.1", "", { "dependencies": { "@typescript-eslint/utils": "^8.13.0", "eslint-visitor-keys": "^4.2.0", "espree": "^10.3.0", "estraverse": "^5.3.0", "picomatch": "^4.0.2" }, "peerDependencies": { "eslint": ">=8.40.0" } }, "sha512-fubZKIHSPuo07FgRTn6S4Nl0uXPRPYVNpyZzIDGfp7Fny6JjNus6kReLD7NI380JXi4HtUTSOZ34LBuNPO1XLQ=="],
 
