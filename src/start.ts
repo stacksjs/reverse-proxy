@@ -1,13 +1,12 @@
 /* eslint-disable no-console */
-import type { SecureServerOptions } from 'node:http2'
+import type { IncomingHttpHeaders, SecureServerOptions } from 'node:http2'
 import type { ServerOptions } from 'node:https'
 import type { CleanupOptions, ProxySetupOptions, ReverseProxyOption, ReverseProxyOptions, SingleReverseProxyConfig, SSLConfig } from './types'
 import * as http from 'node:http'
-import * as https from 'node:https'
 import * as http2 from 'node:http2'
+import * as https from 'node:https'
 import * as net from 'node:net'
 import process from 'node:process'
-import type { IncomingHttpHeaders } from 'node:http2' 
 import { consola as log } from 'consola'
 import colors from 'picocolors'
 import { version } from '../package.json'
@@ -451,23 +450,23 @@ async function createProxyServer(
   // SSL configuration
   const serverOptions: (ServerOptions & SecureServerOptions) | undefined = ssl
     ? {
-      key: ssl.key,
-      cert: ssl.cert,
-      ca: ssl.ca,
-      minVersion: 'TLSv1.2',
-      maxVersion: 'TLSv1.3',
-      requestCert: false,
-      rejectUnauthorized: false,
-      ciphers: [
-        'TLS_AES_128_GCM_SHA256',
-        'TLS_AES_256_GCM_SHA384',
-        'TLS_CHACHA20_POLY1305_SHA256',
-        'ECDHE-ECDSA-AES128-GCM-SHA256',
-        'ECDHE-RSA-AES128-GCM-SHA256',
-        'ECDHE-ECDSA-AES256-GCM-SHA384',
-        'ECDHE-RSA-AES256-GCM-SHA384',
-      ].join(':'),
-    }
+        key: ssl.key,
+        cert: ssl.cert,
+        ca: ssl.ca,
+        minVersion: 'TLSv1.2',
+        maxVersion: 'TLSv1.3',
+        requestCert: false,
+        rejectUnauthorized: false,
+        ciphers: [
+          'TLS_AES_128_GCM_SHA256',
+          'TLS_AES_256_GCM_SHA384',
+          'TLS_CHACHA20_POLY1305_SHA256',
+          'ECDHE-ECDSA-AES128-GCM-SHA256',
+          'ECDHE-RSA-AES128-GCM-SHA256',
+          'ECDHE-ECDSA-AES256-GCM-SHA384',
+          'ECDHE-RSA-AES256-GCM-SHA384',
+        ].join(':'),
+      }
     : undefined
 
   debugLog('server', `Creating server with SSL config: ${!!ssl}`, verbose)
