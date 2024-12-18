@@ -53,7 +53,7 @@ const googleAnalyticsHead: HeadConfig[] = [
 const nav = [
   {
     text: 'Changelog',
-    link: 'https://github.com/stacksjs/stacks/blob/main/CHANGELOG.md',
+    link: 'https://github.com/stacksjs/rpx/blob/main/CHANGELOG.md',
   },
   // { text: 'Blog', link: 'https://updates.ow3.org' },
   {
@@ -98,7 +98,7 @@ const analyticsHead
 export default withPwa(
   defineConfig({
     lang: 'en-US',
-    title: 'Stacks',
+    title: 'Modern Reverse Proxy',
     description: 'Rapid application, cloud & library development framework.',
     metaChunk: true,
 
@@ -108,8 +108,8 @@ export default withPwa(
       ['meta', { name: 'theme-color', content: '#0A0ABC' }],
       ['meta', { property: 'og:type', content: 'website' }],
       ['meta', { property: 'og:locale', content: 'en' }],
-      ['meta', { property: 'og:title', content: 'Reverse Proxy | A better developer environment.' }],
-      ['meta', { property: 'og:site_name', content: 'Reverse Proxy' }],
+      ['meta', { property: 'og:title', content: 'Modern Reverse Proxy | A better developer environment.' }],
+      ['meta', { property: 'og:site_name', content: 'Modern Reverse Proxy' }],
       ['meta', { property: 'og:image', content: './images/og-image.jpg' }],
       ['meta', { property: 'og:url', content: 'https://reverse-proxy.sh/' }],
       // ['script', { 'src': 'https://cdn.usefathom.com/script.js', 'data-site': '', 'data-spa': 'auto', 'defer': '' }],
@@ -135,7 +135,7 @@ export default withPwa(
       socialLinks: [
         { icon: 'twitter', link: 'https://twitter.com/stacksjs' },
         { icon: 'bluesky', link: 'https://bsky.app/profile/chrisbreuer.dev' },
-        { icon: 'github', link: 'https://github.com/stacksjs/stacks' },
+        { icon: 'github', link: 'https://github.com/stacksjs/rpx' },
         { icon: 'discord', link: 'https://discord.gg/stacksjs' },
       ],
 
