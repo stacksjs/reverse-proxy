@@ -149,8 +149,8 @@ export default withPwa(
 
     pwa: {
       manifest: {
-        theme_color: '#0A0ABC'
-      }
+        theme_color: '#0A0ABC',
+      },
     },
 
     markdown: {
