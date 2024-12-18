@@ -1,6 +1,30 @@
 # Changelog
 
 
+## v0.8.0...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.8.0...main)
+
+### 🏡 Chore
+
+- Update eslint ([ac666c7](https://github.com/stacksjs/rpx/commit/ac666c7))
+- Enhance docs ([05f937b](https://github.com/stacksjs/rpx/commit/05f937b))
+- Enhance docs ([ce6ee4b](https://github.com/stacksjs/rpx/commit/ce6ee4b))
+- Added iconify-json/carbon ([5fe085d](https://github.com/stacksjs/rpx/commit/5fe085d))
+- Change unocss version ([c9d2481](https://github.com/stacksjs/rpx/commit/c9d2481))
+- Enhance contributor content ([1a80f1f](https://github.com/stacksjs/rpx/commit/1a80f1f))
+- Readme and lint  changes ([b91147d](https://github.com/stacksjs/rpx/commit/b91147d))
+- Enhance config ([0892893](https://github.com/stacksjs/rpx/commit/0892893))
+- Add bun lock text file ([f3a4fc9](https://github.com/stacksjs/rpx/commit/f3a4fc9))
+- Build for node ([303473b](https://github.com/stacksjs/rpx/commit/303473b))
+- Use only dev deps ([d1b7c9d](https://github.com/stacksjs/rpx/commit/d1b7c9d))
+- Lint ([4b6b191](https://github.com/stacksjs/rpx/commit/4b6b191))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+- Cab-mikee ([@cab-mikee](http://github.com/cab-mikee))
+
 ## v0.7.1...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.7.1...main)
