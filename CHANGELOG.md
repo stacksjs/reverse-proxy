@@ -1,6 +1,25 @@
 # Changelog
 
 
+## v0.8.1...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.8.1...main)
+
+### 🩹 Fixes
+
+- Properly utilize cleanup ([2128973](https://github.com/stacksjs/rpx/commit/2128973))
+
+### 🏡 Chore
+
+- Config changes ([51d56d2](https://github.com/stacksjs/rpx/commit/51d56d2))
+- Minor adjustments ([5d81278](https://github.com/stacksjs/rpx/commit/5d81278))
+- Update tlsx ([31581b8](https://github.com/stacksjs/rpx/commit/31581b8))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+- Cab-mikee ([@cab-mikee](http://github.com/cab-mikee))
+
 ## v0.8.0...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.8.0...main)

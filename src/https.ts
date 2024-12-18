@@ -2,8 +2,8 @@ import type { ReverseProxyConfigs, ReverseProxyOption, ReverseProxyOptions, Sing
 import fs from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { consola as log } from 'consola'
 import { addCertToSystemTrustStoreAndSaveCert, createRootCA, generateCertificate as generateCert } from '@stacksjs/tlsx'
+import { consola as log } from 'consola'
 import { config } from './config'
 import { debugLog, getPrimaryDomain, isMultiProxyConfig, isMultiProxyOptions, isSingleProxyOptions, isValidRootCA, safeDeleteFile } from './utils'
 
