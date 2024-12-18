@@ -1,6 +1,21 @@
 # Changelog
 
 
+## v0.9.0...main
+
+[compare changes](https://github.com/stacksjs/rpx/compare/v0.9.0...main)
+
+### 🏡 Chore
+
+- Update bun version ([13d6955](https://github.com/stacksjs/rpx/commit/13d6955))
+- Improve node support ([bba6f59](https://github.com/stacksjs/rpx/commit/bba6f59))
+- Remove include option ([631c382](https://github.com/stacksjs/rpx/commit/631c382))
+- Lint ([67d36c8](https://github.com/stacksjs/rpx/commit/67d36c8))
+
+### ❤️ Contributors
+
+- Chris ([@chrisbbreuer](http://github.com/chrisbbreuer))
+
 ## v0.8.1...main
 
 [compare changes](https://github.com/stacksjs/rpx/compare/v0.8.1...main)
