@@ -1,4 +1,4 @@
-import { CAC } from '@stacksjs/cli'
+import { CAC } from 'cac'
 import { version } from '../package.json'
 import { config } from '../src/config'
 import { httpsConfig } from '../src/https'

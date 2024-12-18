@@ -1,7 +1,6 @@
-import { log } from '@stacksjs/cli'
 import { dts } from 'bun-plugin-dtsx'
 
-log.info('Building...')
+console.log('Building...')
 
 await Bun.build({
   entrypoints: ['./src/index.ts', './bin/cli.ts'],
@@ -13,4 +12,4 @@ await Bun.build({
   plugins: [dts()],
 })
 
-log.success('Built')
+console.log('Built')

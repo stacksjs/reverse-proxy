@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
-import { log } from '@stacksjs/cli'
+import { consola as log } from 'consola'
 import { debugLog } from './utils'
 
 const execAsync = promisify(exec)
