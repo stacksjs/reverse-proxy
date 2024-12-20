@@ -52,6 +52,9 @@ const sidebar = [
     text: 'Get Started',
     items: [
       { text: 'Introduction', link: '/intro' },
+      { text: 'Installation', link: '/install' },
+      { text: 'Usage', link: '/usage' },
+      { text: 'Configuration', link: '/config' },
     ],
   },
 ]
@@ -59,8 +62,8 @@ const sidebar = [
 export default withPwa(
   defineConfig({
     lang: 'en-US',
-    title: 'Modern Reverse Proxy',
-    description: 'Rapid application, cloud & library development framework.',
+    title: 'rpx',
+    description: 'A modern, fast reverse proxy. For a better local development environment.',
     metaChunk: true,
 
     head: [
@@ -69,8 +72,8 @@ export default withPwa(
       ['meta', { name: 'theme-color', content: '#0A0ABC' }],
       ['meta', { property: 'og:type', content: 'website' }],
       ['meta', { property: 'og:locale', content: 'en' }],
-      ['meta', { property: 'og:title', content: 'Modern Reverse Proxy | A better developer environment.' }],
-      ['meta', { property: 'og:site_name', content: 'Modern Reverse Proxy' }],
+      ['meta', { property: 'og:title', content: 'rpx | A better developer environment.' }],
+      ['meta', { property: 'og:site_name', content: 'rpx' }],
       ['meta', { property: 'og:image', content: './images/og-image.jpg' }],
       ['meta', { property: 'og:url', content: 'https://reverse-proxy.sh/' }],
       // ['script', { 'src': 'https://cdn.usefathom.com/script.js', 'data-site': '', 'data-spa': 'auto', 'defer': '' }],
