@@ -65,6 +65,7 @@ export default withPwa(
     title: 'rpx',
     description: 'A modern, fast reverse proxy. For a better local development environment.',
     metaChunk: true,
+    cleanUrls: true,
 
     head: [
       ['link', { rel: 'icon', type: 'image/svg+xml', href: './images/logo-mini.svg' }],
