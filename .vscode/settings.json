@@ -103,5 +103,8 @@
   ],
   "grammarly.files.exclude": [
     "**/dictionary.txt"
+  ],
+  "cSpell.words": [
+    "unconfig"
   ]
 }
