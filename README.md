@@ -17,7 +17,9 @@
 - Zero-Config Setup
 - SSL Support _(HTTPS by default)_
 - Auto HTTP-to-HTTPS Redirection
-- Self `/etc/hosts` Management
+- `/etc/hosts` Management
+- Clean URLs _(removes `.html` extension)_
+- CLI and Library Support
 
 ## Install
 
